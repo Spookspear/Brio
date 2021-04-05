@@ -1,0 +1,6 @@
+#include 'dateproc.{targetlanguage}'
+
+#define Notusedprompt	   	'Parameter not used.  Press enter to continue'
+#define Schemaprompt		'Insert schema name'
+#define Whereprompt         'Insert where clause'
+
