@@ -36,7 +36,7 @@
 !   17/09/02      BH        Changed the search on PR,PO and Workorder to use maxvalue of status from valuelist
 !   12/03/03      CAA       Included column for inspection items, prints Y If receiptscomplete = N,
 !                           inspectionrequired = Y and status not COMP or CLOSE.
-!   12/03/03      CAA       Amended Wo_check and initialise prqty to zero.
+!   12/03/03      CAA       Amended WO_Check and initialise prqty to zero.
 !   28/01/04      CAA       USE PRICE AGREEMENTS THAT ARE APPROVED OR Print STATUS ONLY - REMEDY 000452195
 !               (same as REMEDY 000450935)
 !   18/02/04      CAA       Remedy 000454667 - calculate tax fro line) and REMEDY 000452195
@@ -222,12 +222,12 @@ Begin-Program
 
     Do GetDllFlagsValues
     Do GetApprovalLimit
-    Do reorder
-    Do date
-    Do labour_get                           ! find internal contact and phone number from labor
-    Do wonum_get                            ! get default wonum
-    Do default_currency_get                 ! get default currency
-    Do main                                 ! order items which have fallen under minlevel requires STOCK
+    Do Reorder
+    Do Date
+    Do Labour_Get                           ! find internal contact and phone number from labor
+    Do WONum_Get                            ! get default wonum
+    Do Default_Currency_Get                 ! get default currency
+    Do Main                                 ! order items which have fallen under minlevel requires STOCK
 
     If #records > 0
         Do CalculateStatus                  ! Calculates the status of the last po added and prints a line
@@ -313,8 +313,8 @@ End-Procedure
 Begin-Procedure Reorder
     Let $errplace='Error in Reorder : Delete From Reorder'
 
-    Begin-Sql on-error=sql_error
-        Delete from [$Schema]reorder;
+    Begin-Sql on-error=SQL_Error
+        Delete from [$Schema]Reorder;
     End-Sql
     commit
 
@@ -339,7 +339,7 @@ End-Procedure !Date
 
 
 ! Get the gldebitaccnt from the locations file for the warehouse entered
-Begin-Procedure glacc_get
+Begin-Procedure GLAcc_Get
     Let $glcontrolacc=' '
 
     Begin-Select
@@ -353,7 +353,7 @@ Begin-Procedure glacc_get
 End-Procedure
 
 ! Get the internal phone number and location
-Begin-Procedure labour_get
+Begin-Procedure Labour_Get
 
     Begin-Select
         LABOR.NAME     &laborname   /   $internalcontact
@@ -367,7 +367,7 @@ End-Procedure
 
 
 ! Get the workorder number
-Begin-Procedure wonum_get
+Begin-Procedure WONum_Get
 
     Begin-Select
         MAXVARS.VARVALUE    &powonum / $powonum
@@ -380,7 +380,7 @@ Begin-Procedure wonum_get
 End-Procedure
 
 ! Get the default currency
-Begin-Procedure default_currency_get
+Begin-Procedure Default_Currency_Get
 
     Let $default_currency='GBP'
 
@@ -394,7 +394,7 @@ End-Procedure
 
 
 !------------------------------------------------------------------------------------------------------------------
-Begin-Procedure main
+Begin-Procedure Main
     Let $lastvendor = '*'
     Let #itemld=0
     Let $ldtable='ITEM'
@@ -426,7 +426,7 @@ Begin-Procedure main
         ITEM.IN19                                   &in19 / $in19
         INVENTORY.DELIVERYTIME                      &deliverytime / #deliverytime
 
-        !  Do glacc_get - resolves to the below
+        !  Do GLAcc_Get - resolves to the below
         ( Select
             LOCATIONS.CONTROLACC      &controlacc / $glcontrolacc
             LOCATIONS.DESCRIPTION     &locdesc
@@ -439,10 +439,10 @@ Begin-Procedure main
         Move &maxlevel to #maxlevel
 
         Let #woqty=0
-        Do wo_check  ! find out If there are any items on work orders to be ordered
+        Do WO_Check  ! find out If there are any items on work orders to be ordered
 
         If #maxlevel > 0 or #woqty>0
-            Do curbal
+            Do Curbal
         End-If
 
         From    [$Schema]INVENTORY INVENTORY,
@@ -473,7 +473,7 @@ End-Procedure !Main
 Begin-Procedure Curbal
 
     Begin-Select
-        Sum(curbal)          &fcurbal
+        Sum(CURBAL)          &fcurbal
 
         Move &minlevel to #min
         Move &fcurbal to #fcurbal
@@ -483,8 +483,8 @@ Begin-Procedure Curbal
             Let #poqty=0
             Let #prqty=0
 
-            Do Pr_check
-            Do Po_check
+            Do PR_Check
+            Do PO_Check
 
             Let #orderqty=0
 
@@ -502,19 +502,19 @@ Begin-Procedure Curbal
 
             Let $priceflag = 'N'                                                ! Is the item on a proce agreement' !82410 - moved line up before If statement
             Let #nullagreement = isnull($agreementno)                           !82410 - moved line up before If statement
-            Let $panum=''                                                       !82410 - set this to null before entering PO_CHECK procedure
-            Let $agreementpoType = ''                                           !82410 - set this to null before entering PO_CHECK procedure
+            Let $panum=''                                                       !82410 - set this to null before entering PO_Check procedure
+            Let $agreementpoType = ''                                           !82410 - set this to null before entering PO_Check procedure
 
             If (#qty - #woqty) <= #min and #orderqty_CONVERTED >0               ! Current balance - reserved + quantities on PR's and PO's still below minimum level or items from work orders to be ordered, Quantity to be ordered has to be greater than 0
 
                 If $vendor!='ZZZZZZ'                                            ! Vendor is not null
                     If #nullagreement <> 1                                      ! i.e. not null
-                        Do PRICE_CHECK                                          ! Find out If there is a price agreement for the item for this vendor
+                        Do Price_Check                                          ! Find out If there is a price agreement for the item for this vendor
                     End-If
 
                     Do HandleLines                                              ! Find out If vendor is valid and then create he POLINE for the item
-                    Do updatePOREQDeliverydate                                  ! Updates the Reqdeliverydate on the polines to be the max date on the lines.
-                    Do updateTax1Value
+                    Do UpdatePOReqDeliveryDate                                  ! Updates the Reqdeliverydate on the polines to be the max date on the lines.
+                    Do UpdateTax1Value
                     Move $vendor to $lastvendor
                     Move $ponumins to $lastponumins
                 Else                                                            ! Vendor is null
@@ -542,7 +542,7 @@ Begin-Procedure Curbal
 End-Procedure !Curbal
 
 !------------------------------------------------------------
-Begin-Procedure updateTax1Value
+Begin-Procedure UpdateTax1Value
     Begin-Select
         Sum(TAX1) &sumTax1 / #sumtax1
         from
@@ -559,7 +559,7 @@ Begin-Procedure updateTax1Value
 End-Procedure
 
 !------------------------------------------------------------
-Begin-Procedure updatePOREQDeliverydate
+Begin-Procedure UpdatePOReqDeliveryDate
     Begin-Select
         min(REQDELIVERYDATE)    &minreqdeliverydate  / $minrequireddate
         from
@@ -575,7 +575,7 @@ Begin-Procedure updatePOREQDeliverydate
 End-Procedure
 
 !------------------------------------------------------------------------------------------------------------------
-Begin-Procedure Pr_check
+Begin-Procedure PR_Check
     move 0 to #prexists
     move 0 to #prqty
 
@@ -600,12 +600,34 @@ Begin-Procedure Pr_check
         and     PRLINE.PONUM is null
     End-Select
 
-End-Procedure !Pr_check
+End-Procedure !PR_Check
+
+
+!------------------------------------------------------------------------------------------------------------------
+! Checks If the items retieved are already on Purchase Request - NOT USED
+!------------------------------------------------------------------------------------------------------------------
+! Begin-Procedure Check_PR
+!     move 0 to #prexists
+!     Begin-Select
+!         PRNUM &dprnum
+!             move 1 to #prexists
+!         From [$Schema]  PRLINE PRLINE,
+!              [$Schema]  PR PR
+!         Where           PRLINE.ITEMNUM = $itemnum
+!         and             PR.PRNUM = PRLINE.PRNUM
+!         and             PR.STATUS in (  select          VALUE
+!                                         from [$Schema]  VALUELIST
+!                                         where           LISTNAME = 'PRSTATUS'
+!                                         and             MAXVALUE in ('WAPPR','APPR'))
+!         and             PRLINE.PONUM is null
+!     End-Select
+
+! End-Procedure
 
 !------------------------------------------------------------------------------------------------------------------
 ! Checks If the items retrieved are already on Purchase Order
 !------------------------------------------------------------------------------------------------------------------
-Begin-Procedure Po_check
+Begin-Procedure PO_Check
     move 0 to #poexists
     move 0 to #poqty
     move 0 to #qty
@@ -643,10 +665,30 @@ Begin-Procedure Po_check
 
 End-Procedure
 
+
+!------------------------------------------------------------------------------------------------------------------
+! Checks If the items retrieved are already on Purchase Order - NOT USED
+!------------------------------------------------------------------------------------------------------------------
+Begin-Procedure Check_PO
+    move 0 to #poexists
+
+    Begin-Select
+            pl.PONUM                            &ponumis
+                move 1 to #poexists
+        From [$Schema]  POLINE pl,
+             [$Schema]  PO p
+        where              p.PONUM = pl.PONUM
+        and               pl.ITEMNUM = $itemnum
+        and                p.POTYPE <> 'PRICE'
+        and               pl.RECEIVEDQTY < pl.ORDERQTY
+    End-Select
+
+End-Procedure
+
 !------------------------------------------------------------------------------------------------------------------
 ! Find out If item is on a current price agreement. If so use the unitcost
 !------------------------------------------------------------------------------------------------------------------
-Begin-Procedure PRICE_CHECK
+Begin-Procedure Price_Check
     Let $contract=''
     Let $panum=''
     Let $agreementpoType=''
@@ -723,95 +765,95 @@ Begin-Procedure HandleLines
         Let $exchangecurrent='Y'               ! Flag to say If currency is current
 
         Begin-Select
-            c.company               &newcompany / $newcompany
-            c.paymentterms          &paymentterms / $paymentterms
-            c.contact               &contact / $contact
-            c.freightterms          &freightterms
-            c.name                  &company / $vendorname
-        nvl(c.TAX1CODE,'AZ')        &tax1code
+            c.COMPANY                           &newcompany / $newcompany
+            c.PAYMENTTERMS                      &paymentterms / $paymentterms
+            c.CONTACT                           &contact / $contact
+            c.FREIGHTTERMS                      &freightterms
+            c.NAME                              &company / $vendorname
+            nvl(c.TAX1CODE,'AZ')                &tax1code
 
-        Do find_tax
+            Do Find_Tax
 
-        c.CURRENCYCODE              &currencycode
+            c.CURRENCYCODE                      &currencycode
 
-        move &tax1code to $tax1code
-        move &currencycode to $currencycode
-        move &freightterms to $freightterms
-        Let #tax1 = round((((#lastcost*#orderqty)/100)*#taxrate),2)
+            move &tax1code to $tax1code
+            move &currencycode to $currencycode
+            move &freightterms to $freightterms
+            Let #tax1 = round((((#lastcost*#orderqty)/100)*#taxrate),2)
 
-        ! If currency code of vendor is not Sterling locate the exchange rate and expiry date from EXCHANGE
+            ! If currency code of vendor is not Sterling locate the exchange rate and expiry date from EXCHANGE
 
-        If $currencycode <> 'GBP'
-            Do currency_get
-            If #exchangerate = 0
+            If $currencycode <> 'GBP'
+                Do Currency_Get
+                If #exchangerate = 0
+                    Let #exchangerate = 1
+                End-If
+
+                !  If expiry date of currency is past flag it. Do not order for the vendor
+                If strtodate(&today,'DD-MON-YYYY') > strtodate($exchangedate,'DD-MON-YYYY')
+                    Let $exchangecurrent='N'
+                End-If
+
+                ! If not on a price agreement and not GBP convert the unit cost
+                If $priceflag='N' and $currencycode<>'GBP' and #exchangerate<>0
+                    Let #lastcost = (#lastcost / #exchangerate)
+                    Let #lastcost = round(#lastcost,2)
+                    Let #tax1 = round((((#lastcost*#orderqty)/100)*#taxrate),2)
+                End-If
+            Else
                 Let #exchangerate = 1
             End-If
 
-            !  If expiry date of currency is past flag it. Do not order for the vendor
-            If strtodate(&today,'DD-MON-YYYY') > strtodate($exchangedate,'DD-MON-YYYY')
-                Let $exchangecurrent='N'
-            End-If
+            move &currencycode to $currencycode
 
-            ! If not on a price agreement and not GBP convert the unit cost
-            If $priceflag='N' and $currencycode<>'GBP' and #exchangerate<>0
-                Let #lastcost = (#lastcost / #exchangerate)
-                Let #lastcost = round(#lastcost,2)
-                Let #tax1 = round((((#lastcost*#orderqty)/100)*#taxrate),2)
-            End-If
-        Else
-            Let #exchangerate = 1
-        End-If
+            Let $LASTPODATE=''
+            Do PODate_Get
 
-        move &currencycode to $currencycode
+            If $exchangecurrent='Y'
+                Do MinValPO
 
-        Let $LASTPODATE=''
-        Do PODATE_GET
+                If $minvalpo <> 'NONE'
+                    Let $ponumins = $minvalpo
+                    Do Update_MinVal_Line               !If a line already exists for the item then add it to the line.
 
-        If $exchangecurrent='Y'
-            Do MinvalPO
-
-            If $minvalpo <> 'NONE'
-                Let $ponumins = $minvalpo
-                Do update_minval_line               !If a line already exists for the item then add it to the line.
-
-                If $insertnewline='Y'               !otherwise add a new line.
-                    Do GetNextPOLine
-                    Do build_poline
+                    If $insertnewline='Y'               !otherwise add a new line.
+                        Do GetNextPOLine
+                        Do Build_POLine
+                    End-If
+                Else
+                    Let #line = 1
+                    Do Build_PO
+                    Do Build_POLine
                 End-If
-             Else
-                Let #line = 1
-                Do build_po
-                Do build_poline
-             End-If
-        Else
-             Do print_notordered
-        End-If
+            Else
+                Do Print_NotOrdered
+            End-If
 
-        From [$Schema]COMPANIES c
-        where c.COMPANY = $vendor
-    End-Select
+            From [$Schema]COMPANIES c
+            where c.COMPANY = $vendor
+        End-Select
 
     Else
         Let #lastcost = round(#lastcost,2)
         Let #tax1 = round((((#lastcost*#orderqty)/100)*#taxrate),2)
 
         If $exchangecurrent='Y'
-            Do MinvalPO
+            Do MinValPO
 
             If $minvalpo <> 'NONE'
                 Let $ponumins = $minvalpo
-                Do update_minval_line           !If a line already exists for the item then add it to the line.
+                Do Update_MinVal_Line           !If a line already exists for the item then add it to the line.
 
                 If $insertnewline='Y'            !otherwise add a new line.
                     Do GetNextPOLine
-                    Do build_poline
+                    Do Build_POLine
                 End-If
             Else
-                Do GetNextPOLine-normal
-                Do build_poline
+                Do GetNextPOLine-Normal
+                Do Build_POLine
             End-If
         Else
-            Do print_notordered
+            Do Print_NotOrdered
 
         End-If
     End-If
@@ -821,7 +863,7 @@ End-Procedure !HandleLines
 !------------------------------------------------------------------------------------------------------------------
 ! If the item already exist on the po then add it to the same line (increase qty) otherwise add new line.
 !------------------------------------------------------------------------------------------------------------------
-Begin-Procedure update_minval_line
+Begin-Procedure Update_MinVal_Line
     Let $insertNewLine=''
     Let #linenumx=0
 
@@ -862,15 +904,15 @@ Begin-Procedure update_minval_line
         Let $insertNewLine='Y'
     End-If
 
-    Do calcTotalCost
+    Do CalcTotalCost
 
-    Begin-Sql on-error=sql_error
+    Begin-Sql on-error=SQL_Error
         update [$Schema]PO set TOTALCOST = #POtotalcost where PONUM = $ponumins;
         update [$schema]PO set CHANGEDATE = SYSDATE where PONUM = $ponumins;
     End-Sql
     commit
 
-    Do printPO
+    Do PrintPO
     Let $printedalready='Y'
 
 End-Procedure
@@ -878,7 +920,7 @@ End-Procedure
 !------------------------------------------------------------------------------------------------------------------
 ! Totalcost should be the sum of the linecost and the tax
 !------------------------------------------------------------------------------------------------------------------
-Begin-Procedure calcTotalCost
+Begin-Procedure CalcTotalCost
     Begin-Select
             Sum(LINECOST)   &linecostsum    / #linecostsum
             Sum(TAX1)       &tax1sum        / #tax1sum
@@ -895,7 +937,7 @@ End-Procedure
 !------------------------------------------------------------------------------------------------------------------
 ! new procedure to find taxrate
 !------------------------------------------------------------------------------------------------------------------
-Begin-Procedure find_tax
+Begin-Procedure Find_Tax
     Let #taxrate = ''
 
     Begin-Select
@@ -909,7 +951,7 @@ End-Procedure
 
 
 !-----------------------------------------------------------------------------------------------------------------
-Begin-Procedure podate_get
+Begin-Procedure PODate_Get
 
     Begin-Select
             LASTDATE        &lastdate / $lastpodate
@@ -924,7 +966,7 @@ Begin-Procedure podate_get
 End-Procedure
 
 !--------------------------------------------------------------------------------------------------------
-Begin-Procedure currency_get
+Begin-Procedure Currency_Get
     Begin-Select
                 EXCHANGERATE                    &exchangerate   / #exchangerate
         To_Char(EXPIREDATE,'DD-MON-YYYY')       &expiredate     / $exchangedate
@@ -993,7 +1035,7 @@ Begin-Procedure Build_PO
     End-If
 
     Let $errplace='Error in Build_PO : Insert into PO'
-    Begin-Sql on-error=sql_error
+    Begin-Sql on-error=SQL_Error
 
         Insert into [$Schema]PO    (PONUM,DESCRIPTION,PURCHASEAGENT,ORDERDATE,REQUIREDDATE,FOLLOWUPDATE,
                                     POType,ORIGINALPONUM,STATUS,STATUSDATE,VENDOR,CONTACT,FREIGHTTERMS,
@@ -1032,7 +1074,7 @@ End-Procedure !Build_PO
 !------------------------------------------------------------------------------------------------------------------
 ! Build PO Lines record
 !------------------------------------------------------------------------------------------------------------------
-Begin-Procedure Build_Poline
+Begin-Procedure Build_POLine
 
     Begin-Select
             !This value retrived will be copied to the line as POLINE.POLINEID
@@ -1060,7 +1102,7 @@ Begin-Procedure Build_Poline
             count(*)                        &THECOUNT / #thecount
 
             If #THECOUNT < 2 AND #VLOW <> 0
-                Do LDKEY_GET
+                Do LDKEY_Get
                 If #PLDKEY > 0
                     Exit-Select
                 End-If
@@ -1087,10 +1129,10 @@ Begin-Procedure Build_Poline
         Let #extratime= 7
     End-If
 
-    Let $errplace='Error in Build_Poline : Insert into POLINE'
+    Let $errplace='Error in Build_POLine : Insert into POLINE'
 
 
-    Begin-Sql on-error=sql_error
+    Begin-Sql on-error=SQL_Error
 
         Insert into [$Schema]POLINE    (PONUM,ITEMNUM,STORELOC,MODELNUM,CATALOGCODE,ORDERQTY,ORDERUNIT,
                                         UNITCOST,CONVERSION,RECEIVEDQTY,RECEIVEDUNITCOST,RECEIVEDTOTALCOST,
@@ -1123,24 +1165,24 @@ Begin-Procedure Build_Poline
     End-Sql
     commit
 
-    Let $errplace='Error in Build_Poline : Insert into POLINE longdescription'
+    Let $errplace='Error in Build_POLine : Insert into POLINE longdescription'
     Let #ldnull = isnull(&ldtext)
     If #ldnull <> 1
-        Begin-Sql on-error=sql_error
+        Begin-Sql on-error=SQL_Error
             Insert into [$Schema] LONGDESCRIPTION (LDKEY,LDOWNERTABLE,LDOWNERCOL,LDTEXT) Values (#pldkey,'POLINE','DESCRIPTION',&ldtext);
         End-Sql
         commit
     End-If
 
-    Do calcTotalcost            !Calculates the total cost of the po.
+    Do CalcTotalCost            !Calculates the total cost of the po.
 
-    Begin-Sql on-error=sql_error
+    Begin-Sql on-error=SQL_Error
         Update [$Schema]PO set TOTALCOST = #POtotalcost where PONUM = $ponumins;
     End-Sql
 
-    Let $errplace='Error in Build_Poline : Insert into Reorder'
+    Let $errplace='Error in Build_POLine : Insert into Reorder'
 
-    Begin-Sql on-error=sql_error
+    Begin-Sql on-error=SQL_Error
     ! Build reorder record
         Insert into [$Schema]REORDER     (ITEMNUM,LOCATION,VENDOR,MINLEVEL,
                                           MAXLEVEL,CATEGORY,ROTATING,ORDERQTY,ORDERUNIT,
@@ -1175,7 +1217,7 @@ End-Procedure !POLINE
 !------------------------------------------------------------------------------------------------------------------
 
 !------------------------------------------------------------------------------------------------------------------
-Begin-Procedure wo_check
+Begin-Procedure WO_Check
 
     Begin-Select
             INVRESERVE.RESERVEDQTY      &woreserved /   #woreserved
@@ -1195,10 +1237,13 @@ Begin-Procedure wo_check
 
 End-Procedure
 
-Begin-Procedure update
+!------------------------------------------------------------------------------------------------------------------
+! Not used
+!------------------------------------------------------------------------------------------------------------------
+Begin-Procedure Update
     Let $errplace='Error in Update : Update PO set totalcost'
 
-    Begin-Sql on-error=sql_error
+    Begin-Sql on-error=SQL_Error
         Update [$Schema] PO
             set TOTALCOST = (select Sum(LOADEDCOST) + Sum(TAX1)
                               from  [$schema] POLINE
@@ -1235,10 +1280,10 @@ Begin-Procedure PrintPO
     add #orderqty to #totqty
     add #wvalue to #totvalue
 
-End-Procedure !Printpo
+End-Procedure !PrintPO
 
 !------------------------------------------------------------------------------------------------------------------
-Begin-Procedure Print_notordered
+Begin-Procedure Print_NotOrdered
     Alter-Printer Font = {Arial} Point-Size = 8
     Print $itemnum                          (+1,1)
     Print $itemdesc                         (,10,41)
@@ -1261,7 +1306,7 @@ Begin-Procedure Print_notordered
     add #wvalue to #totvalue
 
 
-End-Procedure !Printpo
+End-Procedure !PrintPO
 
 !-----------------------------------------------------------------------------------------------------------------
 ! Footer section of the report
@@ -1277,56 +1322,16 @@ Begin-Footing 3
     last-page                               (,63)
 End-Footing
 
-!------------------------------------------------------------------------------------------------------------------
-! Checks If the items retieved are already on Purchase Request
-!------------------------------------------------------------------------------------------------------------------
-Begin-Procedure check_pr
-    move 0 to #prexists
-
-    Begin-Select
-        PRNUM &dprnum
-            move 1 to #prexists
-        From [$Schema]  PRLINE PRLINE,
-             [$Schema]  PR PR
-        Where           PRLINE.ITEMNUM = $itemnum
-        and             PR.PRNUM = PRLINE.PRNUM
-        and             PR.STATUS in (  select          VALUE
-                                        from [$Schema]  VALUELIST
-                                        where           LISTNAME = 'PRSTATUS'
-                                        and             MAXVALUE in ('WAPPR','APPR'))
-        and             PRLINE.PONUM is null
-    End-Select
-
-End-Procedure
-
-!------------------------------------------------------------------------------------------------------------------
-! Checks If the items retrieved are already on Purchase Order
-!------------------------------------------------------------------------------------------------------------------
-Begin-Procedure check_po
-    move 0 to #poexists
-
-    Begin-Select
-            pl.PONUM                            &ponumis
-                move 1 to #poexists
-        From [$Schema]  POLINE pl,
-             [$Schema]  PO p
-        where              p.PONUM = pl.PONUM
-        and               pl.ITEMNUM = $itemnum
-        and                p.POTYPE <> 'PRICE'
-        and               pl.RECEIVEDQTY < pl.ORDERQTY
-    End-Select
-
-End-Procedure
 
 !------------------------------------------------------------------------------------------------------------------
 ! Print the error position & Oracle SQL error, Then stop the report.
 !------------------------------------------------------------------------------------------------------------------
-Begin-Procedure sql_error
+Begin-Procedure SQL_Error
     Print $errplace      (+2,1)
     Print $sql-error     (+3,5)
 End-Procedure
 
-Begin-Procedure LDKEY_GET
+Begin-Procedure LDKEY_Get
     Begin-Select
             MAX(LDKEY)+1      &PLDKEY / #PLDKEY
         from [$schema] LONGDESCRIPTION
@@ -1371,7 +1376,7 @@ End-Procedure !GetNextPOLine
 
 !-------------------------------------------------------------------------------------------------------
 
-Begin-Procedure GetNextPOLine-normal
+Begin-Procedure GetNextPOLine-Normal
     Begin-Select
             max(POLINENUM)      &maxpolinenum-x         ! if null set to 1 otherwise add 1 to retunred value
 
@@ -1423,7 +1428,7 @@ Begin-Procedure CalculateStatus
         Else
             !The Minval PO will now be approved (set to EMAIL or FAX)
             !Set all required by dates to the maximo required by date.
-            Do updateRequiredDates
+            Do UpdateRequiredDates
             Do AddStatus
         End-If
     Else
@@ -1433,7 +1438,7 @@ Begin-Procedure CalculateStatus
 End-Procedure !CalculateStatus
 
 !------------------------------------------------------------------------------------------------------------------
-Begin-Procedure updateRequiredDates
+Begin-Procedure UpdateRequiredDates
     Begin-Select
             min(REQDELIVERYDATE)        &minreqdeliverydateMinval  / $minreqdeliverydateMinval
         from
@@ -1553,13 +1558,13 @@ Begin-Procedure UpdatePOStatus($ponum,$status)
     Let $ponum = ''''||$ponum||''''
     Let $changeby = ''''|| $_username ||''''
 
-    Begin-Sql on-error=sql_error
+    Begin-Sql on-error=SQL_Error
         update [$_schema] PO set STATUS = [$addstatus] where PONUM = [$ponum];
         update [$_schema] PO set STATUSDATE = SYSDATE where PONUM = [$ponum];
 
     End-Sql
 
-    Begin-Sql on-error=sql_error
+    Begin-Sql on-error=SQL_Error
 
         insert into [$_schema]  POSTATUS (
                                     PONUM,
