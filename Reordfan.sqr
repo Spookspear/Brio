@@ -34,11 +34,14 @@
 !   12/8/02       APC       Added inspection required flag to be transferred
 !
 !   17/09/02      BH        Changed the search on PR,PO and Workorder to use maxvalue of status from valuelist
+!
 !   12/03/03      CAA       Included column for inspection items, prints Y If receiptscomplete = N,
 !                           inspectionrequired = Y and status not COMP or CLOSE.
+!
 !   12/03/03      CAA       Amended WO_Check and initialise prqty to zero.
-!   28/01/04      CAA       USE PRICE AGREEMENTS THAT ARE APPROVED OR Print STATUS ONLY - REMEDY 000452195
-!               (same as REMEDY 000450935)
+!
+!   28/01/04      CAA       USE PRICE AGREEMENTS THAT ARE APPROVED OR Print STATUS ONLY - REMEDY 000452195 (same as REMEDY 000450935)
+!
 !   18/02/04      CAA       Remedy 000454667 - calculate tax fro line) and REMEDY 000452195
 !                           (get latest price agreement number as inventory.il1 is not always updated)
 !   26/02/04      JM        Make sure that the exchangerate is always set to 1 for GBP PRs
@@ -426,12 +429,7 @@ Begin-Procedure Main
         ITEM.IN19                                   &in19 / $in19
         INVENTORY.DELIVERYTIME                      &deliverytime / #deliverytime
 
-        !  Do GLAcc_Get - resolves to the below
-        ( Select
-            LOCATIONS.CONTROLACC      &controlacc / $glcontrolacc
-            LOCATIONS.DESCRIPTION     &locdesc
-            from [$schema]LOCATIONS
-            where LOCATION = $location_temp   )
+        Do GLAcc_Get - resolves to the below
 
         Move &lastcost to
         Move &total to
@@ -634,10 +632,10 @@ Begin-Procedure PO_Check
 
     Begin-Select
         pl.PONUM                            &ponumnis / $ponumnis
-        pl.conversion                       &poconv
-       (pl.orderqty-pl.receivedqty)         &poordr_rec
+        pl.CONVERSION                       &poconv
+       (pl.ORDERQTY-pl.RECEIVEDQTY)         &poordr_rec
         p.STATUS                            &status / $postatus
-       pl.receiptscomplete                  &receiptscomplete / $receiptscomplete
+       pl.RECEIPTSCOMPLETE                  &receiptscomplete / $receiptscomplete
 
         move 1 to #poexists
         move 0 to #poqty
