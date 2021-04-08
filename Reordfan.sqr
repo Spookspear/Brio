@@ -655,7 +655,7 @@ Begin-Procedure PO_Check
                                 from [$Schema] VALUELIST
                                 where LISTNAME = 'POSTATUS'
                                 and MAXVALUE in ('WAPPR','APPR','PRINT','FAX','EMAIL'))
-                                or P.STATUS = 'MINVAL')
+            P.STATUS = 'MINVAL')
         and pl.RECEIVEDQTY < pl.ORDERQTY
     End-Select
 
