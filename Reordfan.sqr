@@ -321,7 +321,7 @@ Begin-Procedure Reorder
     End-Sql
     commit
 
-End-Procedure !Reorder
+End-Procedure
 
 !------------------------------------------------------------------------------------------------------------------
 Begin-Procedure Date
@@ -338,7 +338,7 @@ Begin-Procedure Date
         from dual
     End-Select
 
-End-Procedure !Date
+End-Procedure
 
 
 ! Get the gldebitaccnt from the locations file for the warehouse entered
@@ -463,12 +463,12 @@ Begin-Procedure Main
 
     End-Select
 
-End-Procedure !Main
+End-Procedure
 
 !------------------------------------------------------------------------------------------------------------------
 ! Check the Current balance of the items against their minimum level
 !------------------------------------------------------------------------------------------------------------------
-Begin-Procedure Curbal
+Begin-Procedure CurBal
 
     Begin-Select
         Sum(CURBAL)          &fcurbal
@@ -537,7 +537,7 @@ Begin-Procedure Curbal
         and LOCATION = $location
     End-Select
 
-End-Procedure !Curbal
+End-Procedure
 
 !------------------------------------------------------------
 Begin-Procedure UpdateTax1Value
@@ -567,12 +567,12 @@ Begin-Procedure UpdatePOReqDeliveryDate
     End-Select
 
     Begin-Sql
-        update  PO       
-        set     REQUIREDDATE    = $minrequireddate 
+        update  PO
+        set     REQUIREDDATE    = $minrequireddate
         where   PONUM = $ponumins;
 
-        update  POLINE   
-        set     REQDELIVERYDATE = $minrequireddate 
+        update  POLINE
+        set     REQDELIVERYDATE = $minrequireddate
         where   PONUM = $ponumins;
     End-Sql
 End-Procedure
@@ -603,7 +603,7 @@ Begin-Procedure PR_Check
         and     PRLINE.PONUM is null
     End-Select
 
-End-Procedure !PR_Check
+End-Procedure
 
 
 !------------------------------------------------------------------------------------------------------------------
@@ -861,7 +861,7 @@ Begin-Procedure HandleLines
         End-If
     End-If
 
-End-Procedure !HandleLines
+End-Procedure
 
 !------------------------------------------------------------------------------------------------------------------
 ! If the item already exist on the po then add it to the same line (increase qty) otherwise add new line.
@@ -1072,7 +1072,7 @@ Begin-Procedure Build_PO
     End-Sql
 
     commit
-End-Procedure !Build_PO
+End-Procedure
 
 !------------------------------------------------------------------------------------------------------------------
 ! Build PO Lines record
@@ -1215,7 +1215,7 @@ Begin-Procedure Build_POLine
         Do PrintPO
     End-If
 
-End-Procedure !POLINE
+End-Procedure
 
 !------------------------------------------------------------------------------------------------------------------
 
@@ -1255,7 +1255,7 @@ Begin-Procedure Update
     End-Sql
     commit
 
-End-Procedure !update
+End-Procedure
 
 !------------------------------------------------------------------------------------------------------------------
 ! Uses #orderqty not orderqty_real - Andrea - 09 dec 2004
@@ -1283,7 +1283,7 @@ Begin-Procedure PrintPO
     add #orderqty to #totqty
     add #wvalue to #totvalue
 
-End-Procedure !PrintPO
+End-Procedure
 
 !------------------------------------------------------------------------------------------------------------------
 Begin-Procedure Print_NotOrdered
@@ -1309,7 +1309,7 @@ Begin-Procedure Print_NotOrdered
     add #wvalue to #totvalue
 
 
-End-Procedure !PrintPO
+End-Procedure
 
 !-----------------------------------------------------------------------------------------------------------------
 ! Footer section of the report
@@ -1344,7 +1344,7 @@ Begin-Procedure LDKEY_Get
 End-Procedure
 
 !------------------------------------------------------------------------------------------------------------------
-Begin-Procedure MinvalPO
+Begin-Procedure MinValPO
 
     Let $minvalpo = 'NONE'
     Begin-Select
@@ -1355,7 +1355,7 @@ Begin-Procedure MinvalPO
         and  STATUS = 'MINVAL'
     End-Select
 
-End-Procedure !MinvalPO
+End-Procedure
 
 !------------------------------------------------------------------------------------------------------------------
 Begin-Procedure GetNextPOLine
@@ -1375,7 +1375,7 @@ Begin-Procedure GetNextPOLine
 
     End-Select
 
-End-Procedure !GetNextPOLine
+End-Procedure
 
 !-------------------------------------------------------------------------------------------------------
 
@@ -1393,7 +1393,7 @@ Begin-Procedure GetNextPOLine-Normal
         where   PONUM = $ponumins
     End-Select
 
-End-Procedure !GetNextPOLine
+End-Procedure
 
 !------------------------------------------------------------------------------------------------------------------
 ! On Finishing adding PO lines for vendor
@@ -1438,7 +1438,7 @@ Begin-Procedure CalculateStatus
         Do AddStatus
     End-If
 
-End-Procedure !CalculateStatus
+End-Procedure
 
 !------------------------------------------------------------------------------------------------------------------
 Begin-Procedure UpdateRequiredDates
@@ -1595,7 +1595,7 @@ Begin-Procedure UpdatePOStatus( $ponum, $status )
 
     Do EndLines ($ponum,$status)
 
-End-Procedure !UpdatePOStatus
+End-Procedure
 
 Begin-Procedure GetDllFlagsValues
 
@@ -1647,7 +1647,7 @@ Begin-Procedure GetDllFlagsValues
         Let $DefaultStatus = 'WAPPR'               !51980
     End-If
 
-End-Procedure !GetDllFlagsValues
+End-Procedure
 
 Begin-Procedure GetApprovalLimit
     Let $appruser = ''''|| $username ||''''
@@ -1664,7 +1664,7 @@ Begin-Procedure GetApprovalLimit
 
     End-Select
 
-End-Procedure !GetApprovalLimit
+End-Procedure
 
 Begin-Procedure CanFax($vendor,:$CanFax)
     Let $CanFax = 'N'
@@ -1681,7 +1681,7 @@ Begin-Procedure CanFax($vendor,:$CanFax)
 
     End-Select
 
-End-Procedure !CanFax
+End-Procedure
 
 Begin-Procedure CanEMail($vendor,:$CanEMail)
     Let $CanEMail = 'N'
@@ -1697,7 +1697,7 @@ Begin-Procedure CanEMail($vendor,:$CanEMail)
         where   COMPANY = [$wherevendor]
     End-Select
 
-End-Procedure !CanEMail
+End-Procedure
 
 Begin-Procedure EndLines ($ponum,$status)
     If #POTOTCOST = 0 and $status='WAPPR'
@@ -1712,5 +1712,5 @@ Begin-Procedure EndLines ($ponum,$status)
         Print {MinvalMsg} (+1,5)
     End-If
 
-End-Procedure !EndLines
+End-Procedure
 

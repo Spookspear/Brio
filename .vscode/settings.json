@@ -1,5 +1,6 @@
 {
     "editor.fontSize": 10,
     "editor.fontLigatures": null,
-    "files.autoSave": "onWindowChange"
+    "files.autoSave": "onWindowChange",
+    "gitlens.views.commits.files.layout": "tree"
 }
