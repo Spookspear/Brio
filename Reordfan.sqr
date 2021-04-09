@@ -1525,13 +1525,13 @@ Begin-Procedure AddStatus
         End-If
     End-If
 
-End-Procedure !AddStatus
+End-Procedure
 
 !------------------------------------------------------------------------------------------------------------------
 ! If prepared to write an extra line Report that MINVAL PO status change
 ! If approving the order then check that the vendor is not disqualified....
 !------------------------------------------------------------------------------------------------------------------
-Begin-Procedure UpdatePOStatus($ponum,$status)
+Begin-Procedure UpdatePOStatus( $ponum, $status )
 
     If $status='EMAIL' or $status='FAX'
         Begin-Select
