@@ -559,7 +559,7 @@ End-Procedure
 !------------------------------------------------------------
 Begin-Procedure UpdatePOReqDeliveryDate
     Begin-Select
-        min(REQDELIVERYDATE)    &minreqdeliverydate  / $minrequireddate
+            min(REQDELIVERYDATE)    &minreqdeliverydate  / $minrequireddate
         from
             POLINE
         where
@@ -567,8 +567,13 @@ Begin-Procedure UpdatePOReqDeliveryDate
     End-Select
 
     Begin-Sql
-        update PO       set REQUIREDDATE    = $minrequireddate where PONUM = $ponumins;
-        update POLINE   set REQDELIVERYDATE = $minrequireddate where PONUM = $ponumins;
+        update  PO       
+        set     REQUIREDDATE    = $minrequireddate 
+        where   PONUM = $ponumins;
+
+        update  POLINE   
+        set     REQDELIVERYDATE = $minrequireddate 
+        where   PONUM = $ponumins;
     End-Sql
 End-Procedure
 
