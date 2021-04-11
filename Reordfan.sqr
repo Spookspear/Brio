@@ -213,7 +213,7 @@ Begin-Program
     If Upper($USERNAME) <> 'MAXIMO' AND Upper($USERNAME)<> 'SYSADM'
 
         Let $report_name='REORDER'
-        Do user_check
+        Do User_Check
 
     End-If
 
@@ -605,28 +605,6 @@ Begin-Procedure PR_Check
 
 End-Procedure
 
-
-!------------------------------------------------------------------------------------------------------------------
-! Checks If the items retieved are already on Purchase Request - NOT USED
-!------------------------------------------------------------------------------------------------------------------
-! Begin-Procedure Check_PR
-!     move 0 to #prexists
-!     Begin-Select
-!         PRNUM &dprnum
-!             move 1 to #prexists
-!         From [$Schema]  PRLINE PRLINE,
-!              [$Schema]  PR PR
-!         Where           PRLINE.ITEMNUM = $itemnum
-!         and             PR.PRNUM = PRLINE.PRNUM
-!         and             PR.STATUS in (  select          VALUE
-!                                         from [$Schema]  VALUELIST
-!                                         where           LISTNAME = 'PRSTATUS'
-!                                         and             MAXVALUE in ('WAPPR','APPR'))
-!         and             PRLINE.PONUM is null
-!     End-Select
-
-! End-Procedure
-
 !------------------------------------------------------------------------------------------------------------------
 ! Checks If the items retrieved are already on Purchase Order
 !------------------------------------------------------------------------------------------------------------------
@@ -665,26 +643,6 @@ Begin-Procedure PO_Check
     End-Select
 
     Let #poqty=#qty
-
-End-Procedure
-
-
-!------------------------------------------------------------------------------------------------------------------
-! Checks If the items retrieved are already on Purchase Order - NOT USED
-!------------------------------------------------------------------------------------------------------------------
-Begin-Procedure Check_PO
-    move 0 to #poexists
-
-    Begin-Select
-            pl.PONUM                            &ponumis
-                move 1 to #poexists
-        From [$Schema]  POLINE pl,
-             [$Schema]  PO p
-        where              p.PONUM = pl.PONUM
-        and               pl.ITEMNUM = $itemnum
-        and                p.POTYPE <> 'PRICE'
-        and               pl.RECEIVEDQTY < pl.ORDERQTY
-    End-Select
 
 End-Procedure
 
@@ -991,10 +949,8 @@ Begin-Procedure Build_PO
 
     Begin-Select
                 VARVALUE  &reordergecstore  / $reordergecstore
-        from
-                MAXVARS
-        where
-                VARNAME = 'REORDERGECSTORE'
+        from    MAXVARS
+        where   VARNAME = 'REORDERGECSTORE'
     End-Select
 
 
@@ -1699,7 +1655,7 @@ Begin-Procedure CanEMail($vendor,:$CanEMail)
 
 End-Procedure
 
-Begin-Procedure EndLines ($ponum,$status)
+Begin-Procedure EndLines ($ponum, $status)
     If #POTOTCOST = 0 and $status='WAPPR'
         Print 'PO totalcost is 0.00 - Status set to WAPPR' (+1,5)
     Else
