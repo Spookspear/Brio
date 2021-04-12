@@ -1,10 +1,10 @@
-!-----------------------------------------------------------------
+!----------------------------------------------------------------
 !  FILENAME     : Reordfan.sqr
 !  AUTHOR       : Andrew Bratton (Thanks to Alan Stevens (BPD Consulting Ltd))
 !  DATE         : 29/09/20041
-!-----------------------------------------------------------------
+!----------------------------------------------------------------
 !  DESCRIPTION  : Fast track and Engineering Contract Items Reorder Report
-!-----------------------------------------------------------------
+!----------------------------------------------------------------
 !  MODIFICATION HISTORY
 !  DATE           INITIALS  NOTES
 !  03/01/02       AS        Added include file Input.h as requested, therefore needed to $Schema to
@@ -43,7 +43,7 @@
 !   28/01/04      CAA       USE PRICE AGREEMENTS THAT ARE APPROVED OR Print STATUS ONLY - REMEDY 000452195 (same as REMEDY 000450935)
 !
 !   18/02/04      CAA       Remedy 000454667 - calculate tax fro line) and REMEDY 000452195
-!                           (get latest price agreement number as inventory.il1 is not always updated)
+!                           (get latest price agreement number as INVENTORY.il1 is not always updated)
 !   26/02/04      JM        Make sure that the exchangerate is always set to 1 for GBP PRs
 !   24/03/04      CAA       Add prompt and search for ROI, ROR or Both, Remedy Call 000459289
 !   24/03/04      CAA       Add column in4 (respnsile person) Remedy - 000460302 (Printed where PANUM used to be printed)
@@ -70,7 +70,7 @@
 !   03/02/2010    A Newman  footPrint 82410 - POLines pick up incorrect Price Agreement for item
 !   30/11/10      G Stephen Project Wales - VAT Changes to 'AZ'
 !   14/12/10      G Stephen Project Wales - Add new purchase groups
-!-----------------------------------------------------------------
+!----------------------------------------------------------------
 
 !------------------------------------------------------------
 ! Start of program
@@ -342,8 +342,8 @@ Begin-Procedure Date
     End-Sql
 
     Begin-Select
-        To_Char(sysdate,'DD-Mon-YYYY')      &today
-        add_months(trunc(sysdate),-6)       &date
+        To_Char(SYSDATE,'DD-Mon-YYYY')      &today
+        add_months(trunc(SYSDATE),-6)       &date
 
         Move &date to $date
         from dual
@@ -689,9 +689,9 @@ Begin-Procedure Price_Check
 
         To_Char(PO.EXCHANGEDATE,'DD-MON-YYYY')                  &pricedate
         trunc(PO.ENDDATE)                                       &paenddate
-        trunc(SYSDATE)                                          &pasysdate
+        trunc(SYSDATE)                                          &paSYSDATE
 
-        If &paenddate < &pasysdate
+        If &paenddate < &paSYSDATE
             !DOSTUFF
         Else
             !DO_ERROR_REPORT
@@ -1035,9 +1035,9 @@ Begin-Procedure Build_PO
                                     INTERID,MIGCHANGEID,SENDERSYSID,EXPDONE)
 
                 Values            ($ponumins,SUBSTR($vendorname,1,34)||' STORES REORDER',$DefaultBuyer,
-                                    sysdate,sysdate+7,NULL,'PART',NULL,'WAPPR',sysdate,$vendor,$contact,
+                                    SYSDATE,SYSDATE+7,NULL,'PART',NULL,'WAPPR',SYSDATE,$vendor,$contact,
                                     $freightterms,$paymentterms,NULL,NULL,NULL,$SHIPTO,NULL,$BILLTO,      !paymentterms added 176424
-                                    NULL,0,Upper($username),sysdate,0,'N',
+                                    NULL,0,Upper($username),SYSDATE,0,'N',
                                     NULL,$reordergecstore,NULL,$Internal_Contact,$Internal_Contact_Phone,$PurchaseGroup,NULL,NULL,NULL,NULL,NULL,NULL,
                                    'NONE',$currencycode,#exchangerate,to_date($exchangedate,'DD-MON-YYYY'),'N',
                                     0,0,0,'Y','Y','Y','N',0,0,'Y','Y',NULL,NULL,
@@ -1049,7 +1049,7 @@ Begin-Procedure Build_PO
             Update [$Schema]AUTOKEY set SEED = SEED+1 where TBNAME = 'PO';
 
             Insert into [$Schema]POSTATUS (PONUM,STATUS,CHANGEDATE,CHANGEBY,MEMO)
-                        Values ($ponumins,'WAPPR',sysdate,'MAXIMO','Auto Reorder');
+                        Values ($ponumins,'WAPPR',SYSDATE,'MAXIMO','Auto Reorder');
 
     End-Sql
 
@@ -1135,8 +1135,8 @@ Begin-Procedure Build_POLine
                                         VENDORWAREHOUSE)
                     Values      (       $ponumins,$itemnum,$location,$modelnum,$catcode,#orderqty_converted,
                                         $orderunit,(#lastcost*#conversion),#conversion,0,0,0,0,NULL,
-                                        NULL,sysdate,Upper($username),$itemdesc,
-                                        NULL,NULL,NULL,NULL,NULL,#pldkey,$powonum,NULL,(sysdate + #extratime),
+                                        NULL,SYSDATE,Upper($username),$itemdesc,
+                                        NULL,NULL,NULL,NULL,NULL,#pldkey,$powonum,NULL,(SYSDATE + #extratime),
                                         'N',#line,NULL,NULL,NULL,NULL,NULL,NULL,NULL,
                                         NULL,'N',$glcontrolacc,NULL,(#lastcost*#orderqty_converted*#conversion),$tax1code,
                                         #tax1,NULL,0,NULL,0,NULL,'N',$manufacturer,'N',
@@ -1182,7 +1182,7 @@ Begin-Procedure Build_POLine
                                 Values    ($itemnum,$location,$vendor,#minlevel,
                                           #maxlevel,'cat',NULL,#orderqty_converted,$orderunit,
                                           #lastcost,$conversion,NULL,NULL,NULL,
-                                          NULL,$ponum,#fcurbal,NULL,sysdate+7,
+                                          NULL,$ponum,#fcurbal,NULL,SYSDATE+7,
                                           'MAXIMO',NULL,NULL,NULL,$glcontrolacc,
                                           NULL,NULL,$manufacturer,$modelnum,$catcode,
                                           NULL,NULL,NULL,NULL,NULL,
@@ -1555,7 +1555,7 @@ Begin-Procedure UpdatePOStatus( $ponum, $status )
                           values ([$ponum],
                                   [$addstatus],
                                   [$changeby],
-                                  sysdate,
+                                  SYSDATE,
                                   'AUTO REORDER')
 
     End-Sql
@@ -1564,7 +1564,7 @@ Begin-Procedure UpdatePOStatus( $ponum, $status )
     If $status='EMAIL' or $status='FAX'
         Begin-Sql
             update [$_schema] PO
-            set ORDERDATE = sysdate
+            set ORDERDATE = SYSDATE
             where PONUM = [$ponum];
         End-Sql
         commit

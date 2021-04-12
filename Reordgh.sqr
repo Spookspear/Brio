@@ -1,10 +1,10 @@
-!-------------------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------
 !  FILENAME     : Reordgh.sqr
 !  AUTHOR       : Alan Stevens (BPD Consulting Ltd)
 !  DATE         : 20/11/2001
-!-------------------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------
 !  DESCRIPTION  : Reorder Report - Consolidated version for use by Grangemouth And Hull.
-!-------------------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------
 !  MODIFICATION HISTORY
 !  DATE           INITIALS  NOTES
 !  03/01/02       AS        Added include file Input.h as requested, therefore needed to $Schema to
@@ -40,7 +40,7 @@
 !   28/01/04      CAA       USE PRICE AGREEMENTS THAT ARE APPROVED OR Print STATUS ONLY - REMEDY 000452195
 !               (same as REMEDY 000450935)
 !   18/02/04      CAA       Remedy 000454667 - calculate tax fro line) And REMEDY 000452195
-!                           (get latest price agreement number as inventory.il1 is not always Updated)
+!                           (get latest price agreement number as INVENTORY.il1 is not always Updated)
 !   26/02/04      JM        Make sure that the exchangerate is always Set to 1 for GBP PRs
 !   24/03/04      CAA       Add prompt And search for ROI, ROR or Both, Remedy Call 000459289
 !   24/03/04      CAA       Add column in4 (respnsile person) Remedy - 000460302 (Printed where PANUM used to be Printed)
@@ -54,7 +54,7 @@
 !   09/12/04      RSC       Consolidated REORDERG report for use at Hull And Grangemouth. Require maxvar REORDERFORMAT, Set to H for Hull.
 !   16/12/04      RSC       Minor change to fix problem If received is more than ordered qty.
 !   18/01/05      RSC       Adding Workflow functionality. WS137
-!                           Note WORKFLOW functionality requires the following maxvars: PR_WF_REVISION, PR_WF_NODEID, PR_WF_PROCESSID
+!                           Note WORKFLOW functionality requires the following MAXVARS: PR_WF_REVISION, PR_WF_NODEID, PR_WF_PROCESSID
                             !******Note. Need to grant insert, Update rights on wfcallstack, wfinstance And wfassignment
 
 !   28/01/05      RSC       Add ability to reorder for 3 storerooms at once.
@@ -67,10 +67,10 @@
 !   09/07/07      R Nunn    Remedy Call 152666 - Add item criticality to report
 !   13/12/07      R Nunn    Remedy Call 162630 - Correct exchange rate / currencycode
 !   28/11/08      R Nunn    footPrint 37373 tax code change from 'GM' to 'G4'
-!   18/11/09      R Nunn    footPrint 69505 Change PO FAST TRACK = NO And (item.in15 is null or (item.in15 not in('Y', 'N')))
+!   18/11/09      R Nunn    footPrint 69505 Change PO FAST TRACK = NO And (ITEM.in15 is null or (ITEM.in15 not in('Y', 'N')))
 !   30/11/10      G Stephen Project Wales - VAT Changes to 'AZ'
 !   05/04/13    Siddhartha   For call 193198 supvervisor has been amEnded from STEVEN BOYLE to Robert Hamilto
-!-------------------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------
 Begin-Setup
     #Define Arial               4
     #Define Courier             3
@@ -123,8 +123,9 @@ End-Setup
 
 #Include 'Input.h'
 
-!------------------------------------------------------------------------------------------------------------------
-
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Heading 8
 
     Print-Image logo (1,100)
@@ -197,7 +198,9 @@ Begin-Heading 8
 
 End-Heading
 
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Program
     create-array name=pr_array size=400
 
@@ -259,7 +262,9 @@ Begin-Program
 
 End-Program
 
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Procedure GetPurchGroup
     Begin-Select
                 VARVALUE    &purchGroup / $purchasegroup
@@ -268,7 +273,9 @@ Begin-Procedure GetPurchGroup
     End-Select
 End-Procedure
 
-
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Procedure getReportFormat
     Begin-Select
                 VARVALUE &reportformat / $reportformat
@@ -278,6 +285,9 @@ End-Select
 
 End-Procedure
 
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Procedure Check-Input
     Let $Storeroom1 = Upper($P2)
     Let $Storeroom2 = Upper($P3)
@@ -313,336 +323,256 @@ Begin-Procedure Check-Input
 
 End-Procedure
 
-!-------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
 ! Reorder
-!-------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
 Begin-Procedure Reorder
     Let $errplace='Error in Reorder : Delete from Reorder'
     Begin-Sql on-error=sql_error
         Delete from reorder;
     End-Sql
 End-Procedure !Reorder
-!------------------------------------------------------------------------------------------------------------------
-Begin-Procedure Date
-!Gets Date 6 months ago from today
-Begin-Sql
- Alter session Set nls_date_format = 'DD-MON-YYYY';
-End-Sql
-
-Begin-Select
-To_Char(sysdate,'DD-Mon-YYYY')      &today
-add_months(trunc(sysdate),-6)       &Date
-    Move &Date to $Date
-!    Print $Date (+1,1)
- from dual
-End-Select
-End-Procedure !Date
-
-
-! Get the gldebitaccnt from the locations file for the warehouse entered
-Begin-Procedure glacc_get
-
- Let $glcontrolacc=' '
-Begin-Select
-locations.controlacc      &controlacc
-  Move &controlacc to $glcontrolacc
-LOCATIONS.DESCRIPTION     &locdesc
-from locations where location = $location_temp!$storeroom
-End-Select
-
-End-Procedure
-
-! Get the internal phone number And location
-Begin-Procedure labour_get
-
-Begin-Select
-labor.name     &laborname
-labor.callid   &phonenum
-  Move &laborname to $internalcontact
-  Move &phonenum  to $internalphone
-from labor  where Upper(laborcode)=Upper($username)
-End-Select
-
-End-Procedure
-
-
-! Get the workorder number
-Begin-Procedure wonum_get
-Begin-Select
-maxvars.varvalue    &prwonum
-  Move &prwonum to $prwonum
-from maxvars where varname='REORDER_WONUM'
-End-Select
- Let $prwonum = ''                      ! Workorder no longer required on PR (for now?) BH - 14-May-02
-End-Procedure
-
-! Get the default currency
-Begin-Procedure default_currency_get
- Let $default_currency='GBP'
-Begin-Select
-maxvars.varvalue    &currency
-  Move &currency  to $default_currency
-from maxvars where varname='BASECURRENCY1'
-End-Select
-End-Procedure
-
-
-
-
-!------------------------------------------------------------------------------------------------------------------
-Begin-Procedure main
- Let $lastvEndor = '*'
-!***added $respasSet re WS137 AB
- Let $lastrespasSet = '*'
- Let #itemld=0
- Let $ldtable='ITEM'
- Let $ldfield='DESCRIPTION'
-
-If $ITEMIN5 ='B'            !PROCESSES ROI And ROR SEPERATELY
-
-Let $ITEMIN5='I'
-Let $ROIROR = ' And ITEM.IN5 = '||'''ROI'''||''
-Let $ORDERBYCLAUSE='Nvl(inventory.VENDOR,''ZZZZZZ''), inventory.itemnum'
-
-!Print $orderbyclause (,10)
-Do MAIN_SQL
-Let $ITEMIN5='R'
-Let $ROIROR = ' And ITEM.IN5 = '||'''ROR'''||''
-Let $ORDERBYCLAUSE='Nvl(inventory.VENDOR,''ZZZZZZ''), ITEM.IN4, inventory.itemnum'
-
-!Print $orderbyclause (,10)
-Do MAIN_SQL
-Let $ITEMIN5='B'
-
-Else
-Let $ORDERBYCLAUSE='Nvl(inventory.VENDOR,''ZZZZZZ''), inventory.itemnum'
-
-!Print $orderbyclause (,10)
-Do MAIN_SQL
-End-If
-
-
-
-End-Procedure !Main
-!------------------------------------------------------------------------------------------------------------------
-Begin-Procedure MAIN_SQL
-Begin-Select
-inventory.itemnum                           &itemnum
- Move &itemnum to $itemnum
-inventory.minlevel                          &minlevel
-inventory.maxlevel                          &maxlevel
-inventory.location                          &location
- Move &location to $location
-  Let $location_temp=$location
-Nvl(inventory.VENDOR,'ZZZZZZ')               &vEndor
- Move &vEndor to $Vendor
-inventory.orderqty                          &orderqty
-item.description                            &itemdesc
- Move &itemdesc to $itemdesc
-item.inspectionrequired                     &inspectionrequired
- Move &inspectionrequired to $inspectionrequired
-item.ldkey                                  &itemld
- Move &itemld to #itemld
-inventory.manufacturer                          &manufacturer
- Move &manufacturer to $manufacturer
-inventory.modelnum                          &modelnum
- Move &modelnum to $modelnum
-inventory.category                          &category
- Move &category to $category
-inventory.catalogcode                       &catcode
- Move &catcode to $catcode
-inventory.orderunit                         &orderunit
- Move &orderunit to $orderunit
- Let $orderunit=rtrim($orderunit,' ')
- If isnull($orderunit)
-   Let $orderunit='EA'
-  End-If
-inventory.lastcost                          &lastcost
-inventory.conversion                        &conversion
- Move &conversion to $conversion
- Move &conversion to #conversion
-(inventory.orderqty*inventory.lastcost)     &total
-
-inventory.lastissuedate         &lastissuedate
-inventory.il1                   &il1
-  Move &il1 to $agreementno
-item.in5                        &in5
- Move &in5 to $orderapproval
-item.in4            &in4
- Move &in4 to $respasSet    !was $resperson
-item.in3            &in3
- Move &in3 to $criticality
-!Remedy Call 000476963 (added in19 column to report)
-item.in19           &in19
- Move &in19 to $in19
-
-inventory.deliverytime        &deliverytime
-  Move &deliverytime to #deliverytime
-
-!******** Do glacc_get                            !Moved to here to cater for more than one storerroom. RCooke.
-
-  Move &lastcost to #lastcost
- Move &total to #total
- Move &minlevel to #minlevel
- Move &maxlevel to #maxlevel
-
- Let #woqty=0
-!********** Do wo_check  ! find out If there are any items on work orders to be ordered
-
-  Do glacc_get  !This Moved here so the storeroom's glaccount is correct.
-
-
-
-  If #maxlevel > 0 or #woqty>0
-   Do curbal
-  End-If
- ! Print $ITEMNUM (+1,1)
-
-
-from  Inventory inventory, Item item
-where
-inventory.itemnum = item.itemnum
-And inventory.category = 'STK'
- !And inventory.minlevel > 0
-And item.outside<>'Y'
-And (item.stockType NOT IN ('REDSTK', 'WASTE')  or item.stockType is null)
-And (item.in22 is null or TRUNC(SYSDATE) > trunc(item.in22))
-And (inventory.location = $Storeroom1 or inventory.location=$storeroom2 or inventory.location=$storeroom3) !Added RCooke.
-
-!  And item.itemnum = '57210008' !AN
-  !*** CAA - Remedy Call 000459289 *** - commented out per WS137 - AB
-[$ROIROR]
- !And item.in5 = 'ROR' !added as per WS137 - AB
- ! And trunc(inventory.lastissuedate) >= To_Date($Date,'DD-MON-YYYY')   ! Has been issued in last 6 months
-!And inventory.VENDOR in (select company from companies where disabled='N') !- Remedy 102586
-!And (item.in15 <> 'Y' OR ITEM.IN15 is null)  !69505
-And (item.in15 is null or (item.in15 not in('Y', 'N'))) !69505
-Order By [$ORDERBYCLAUSE] !Nvl(inventory.VENDOR,'ZZZZZZ'), inventory.itemnum
-End-Select
-
-End-Procedure
-
-
-Begin-Procedure Curbal
-!Check the Current balance of the items against their minimum level
-Begin-Select
-Sum(curbal)          &fcurbal
-
- Move &minlevel to #min
- Move &fcurbal to #fcurbal
-
- If (#fcurbal - #woqty) <= #min    ! Current balance less reserved below minimum level or items from work orders
-                               ! to be ordered
-  Move #fcurbal to #qty
-  Let #poqty=0
-  Let #prqty=0
-  Let #rfqqty=0
-
-  Do Rfq_check ! --*** Remedy Call 000476559 ***--
-  Do Pr_check
-  ! --*** Remedy Call 000476559 ***-- take qyt of rfq not pr If rfq exists, take qty of pr If no rfq exists
-        If #rfqexists = 1
-          Let #rfq-pr-qty = #rfqqty
-          add #rfqqty to #qty
-        Else
-          Let #rfq-pr-qty = #prqty
-          add #prqty to #qty
-        End-If
-  Do Po_check
-
-  ! If curbal + quantity on rfq's, pr's And po's still below the minimum reorder it
-  Let #orderqty=0
-  !Let #orderqty = (#maxlevel - #poqty - #prqty - #fcurbal + #woqty) ! add the quantity from the work order to the quantity to order
-  Let #orderqty = (#maxlevel - #poqty - #totalinspqty - #prqty - #rfqqty - #fcurbal + #woqty) ! add the quantity from the work order to the quantity to order
-                                        !total inspection quantity also taken into account now. RCooke.
-
-
-
-  If #conversion=0
-        Let #conversion=1
-  End-If
- Let #orderqty_converted=round(((#orderqty/#conversion)-0.5),0)
-
-
-
-
- !ANPrint 'maxlevel' (+1,1)
-  !ANPrint 'poqty' (,10)
-  !ANPrint 'prqty' (,20)
-  !ANPrint 'rfqqty' (,30)
-  !ANPrint 'fcurbal' (,40)
-  !ANPrint 'woqty' (,50)
-  !ANPrint 'orderqty' (,60)
-  !ANPrint 'qty' (,70)
-
-
-  !ANPrint #maxlevel (+1,1)
-  !ANPrint #poqty (,10)
-  !ANPrint #prqty (,20)
-  !ANPrint #rfqqty (,30)
-  !ANPrint #fcurbal (,40)
-  !ANPrint #woqty (,50)
-  !ANPrint #orderqty (,60)
-  !ANPrint #qty (,70)
-    If #orderqty_converted<0
-        Let #orderqty_converted=0
-    End-If
-  If (#qty - #woqty) <= #min And #orderqty >0   ! Current balance - reserved + quantities on PR's And PO's
-                                           ! still below minimum level or items from work orders to be
-                                           ! ordered
-                                           ! Quantity to be ordered has to be greater than 0
-
-
-
-    If $Vendor!='ZZZZZZ'   ! VEndor is not null
-     !Let $tax1code='G4' !FOOTPrint 37373 CHANGED TO 'G4'from GM                    !Changed from '' to GM RCooke
-     !Let $tax1code='GM' !FOOTPrint 76810 CHANGED TO 'GM'from G4
-     Let $tax1code='AZ' !Project Wales VAT Changes
-     Let $currencycode=$default_currency
-     Let #exchangerate=0
-     Let $exchangedate=''
-     Let $priceflag = 'N'   ! Is the item on a proce agreement'
-   Do PRICE_CHECK        ! Find out If there is a price agreement for the item for this vEndor
-     Do companies          ! Find out If vEndor is valid And then create he POline for the item
-
-     Move $Vendor to $lastvEndor
-    !***added $respasSet re WS137 AB
-     Move $respasSet to $lastrespasset
-        Move $prnumins to $lastprnumins
-     Else                  ! VEndor is null
- !---------------------------------
-   !If last vEndor was not null then Do the status....for it. RCooke.
-    If $lastvEndor <> '*' And $lastvEndor <> 'ZZZZZZ'
-  Do CalculateStatus !Set status for previous order     !This wont run If there is only one vEndor, as it will be *
-
-     End-If
-
 
 !------------------------------------------------------------
-     !Let $tax1code='G4'     !FOOTPrint 37373 CHANGD from 'GM' TO 'G4
-     !Let $tax1code='GM'     !FOOTPrint 76810 CHANGD from 'G4' TO 'GM'
-     Let $tax1code='AZ'     !Project Wales VAT Changes
-     Let $currencycode=$default_currency
-     Let #exchangerate=0
-     Let $exchangedate=''
-     Let $contract=''
-     Do null_vEndor        ! Create a PR for a null vEndor
-  !********      Print 'AFTER NULL VENDOR' (+1,1)
-     Move 'ZZZZZZ' to $lastvEndor
+! Gets Date 6 months ago from today
+!------------------------------------------------------------
+Begin-Procedure Date
+    Begin-Sql
+        Alter session Set nls_date_format = 'DD-MON-YYYY';
+    End-Sql
+
+    Begin-Select
+        To_Char(SYSDATE,'DD-Mon-YYYY')      &today
+        add_months(trunc(SYSDATE),-6)       &Date / $Date
+         from DUAL
+    End-Select
+End-Procedure !Date
+
+!------------------------------------------------------------
+! Get the gldebitaccnt from the locations file for the warehouse entered
+!------------------------------------------------------------
+Begin-Procedure glacc_get
+    Let $glcontrolacc=' '
+    Begin-Select
+        LOCATIONS.CONTROLACC      &controlacc / $glcontrolacc
+        LOCATIONS.DESCRIPTION     &locdesc
+        from LOCATIONS
+        where LOCATION = $location_temp
+    End-Select
+End-Procedure
+
+!------------------------------------------------------------
+! Get the internal phone number And location
+!------------------------------------------------------------
+Begin-Procedure labour_get
+    Begin-Select
+        LABOR.NAME     &laborname / $internalcontact
+        LABOR.CALLID   &phonenum / $internalphone
+        from LABOR
+        where Upper(LABORCODE)=Upper($username)
+    End-Select
+End-Procedure
+
+!------------------------------------------------------------
+! Get the workorder number
+!------------------------------------------------------------
+Begin-Procedure wonum_get
+    Begin-Select
+        MAXVARS.VARVALUE    &prwonum / $prwonum
+        from MAXVARS
+        where VARNAME='REORDER_WONUM'
+    End-Select
+    Let $prwonum = ''
+End-Procedure
+
+!------------------------------------------------------------
+! Get the default currency
+!------------------------------------------------------------
+Begin-Procedure default_currency_get
+    Let $default_currency='GBP'
+    Begin-Select
+        MAXVARS.VARVALUE    &currency / $default_currency
+        from MAXVARS
+        where VARNAME='BASECURRENCY1'
+    End-Select
+End-Procedure
+
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
+Begin-Procedure main
+    Let $lastvEndor = '*'
+    Let $lastrespasSet = '*'
+    Let #itemld=0
+    Let $ldtable='ITEM'
+    Let $ldfield='DESCRIPTION'
+
+    If $ITEMIN5 ='B'            !PROCESSES ROI And ROR SEPERATELY
+        Let $ITEMIN5='I'
+        Let $ROIROR = ' And ITEM.IN5 = '||'''ROI'''||''
+        Let $ORDERBYCLAUSE='Nvl(INVENTORY.VENDOR,''ZZZZZZ''), INVENTORY.itemnum'
+
+        Do MAIN_SQL
+        Let $ITEMIN5='R'
+        Let $ROIROR = ' And ITEM.IN5 = '||'''ROR'''||''
+        Let $ORDERBYCLAUSE='Nvl(INVENTORY.VENDOR,''ZZZZZZ''), ITEM.IN4, INVENTORY.itemnum'
+
+        Do MAIN_SQL
+        Let $ITEMIN5='B'
+    Else
+        Let $ORDERBYCLAUSE='Nvl(INVENTORY.VENDOR,''ZZZZZZ''), INVENTORY.itemnum'
+        Do MAIN_SQL
     End-If
 
-   End-If
- End-If
+End-Procedure !Main
 
-from Invbalances
-  where itemnum = $itemnum
-  And location = $location
-End-Select
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
+Begin-Procedure MAIN_SQL
+    Begin-Select
+        INVENTORY.itemnum                           &itemnum / $itemnum
+        INVENTORY.MINLEVEL                          &minlevel / #minlevel
+        INVENTORY.MAXLEVEL                          &maxlevel / maxlevel
+        INVENTORY.LOCATION                          &location / $location / $location_temp
+        nvl(INVENTORY.VENDOR,'ZZZZZZ')              &vEndor / $Vendor
+        INVENTORY.ORDERQTY                          &orderqty
+        ITEM.DESCRIPTION                            &itemdesc / $itemdesc
+        ITEM.INSPECTIONREQUIRED                     &inspectionrequired / $inspectionrequired
+        ITEM.LDKEY                                  &itemld / #itemld
+        INVENTORY.MANUFACTURER                      &manufacturer / $manufacturer
+        INVENTORY.MODELNUM                          &modelnum / $modelnum
+        INVENTORY.CATEGORY                          &category / $category
+        INVENTORY.catalogcode                       &catcode / $catcode
+        INVENTORY.ORDERUNIT                         &orderunit / $orderunit
+        Let $orderunit=rtrim($orderunit,' ')
+
+        If isnull($orderunit)
+            Let $orderunit='EA'
+        End-If
+
+        INVENTORY.LASTCOST                          &lastcost / #lastcost
+        INVENTORY.CONVERSION                        &conversion / $conversion / #conversion
+        (INVENTORY.ORDERQTY * INVENTORY.LASTCOST)   &total / #total
+
+        INVENTORY.LASTISSUEDATE                     &lastissuedate
+        INVENTORY.IL1                               &il1 / $agreementno
+        ITEM.IN5                                    &in5 / $orderapproval
+        ITEM.IN4                                    &in4 / $respasSet
+        ITEM.IN3                                    &in3 / $criticality
+        ITEM.IN19                                   &in19 / $in19
+        INVENTORY.DELIVERYTIME                      &deliverytime / #deliverytime
+
+        Let #woqty=0
+        Do glacc_get
+
+        If #maxlevel > 0 or #woqty>0
+           Do CurBal
+        End-If
+
+        from    INVENTORY INVENTORY, ITEM ITEM
+        where   INVENTORY.ITEMNUM = ITEM.ITEMNUM
+        and     INVENTORY.category = 'STK'
+        and     ITEM.OUTSIDE<>'Y'
+        and (   ITEM.STOCKtYPE NOT IN ('REDSTK', 'WASTE')  or ITEM.STOCKtYPE is null)
+        and (   ITEM.IN22 is null or TRUNC(SYSDATE) > trunc(ITEM.IN22))
+        and (   INVENTORY.LOCATION = $Storeroom1
+            or  INVENTORY.location=$storeroom2
+            or  INVENTORY.location=$storeroom3)
+        [$ROIROR]
+        and (ITEM.IN15 is null or (ITEM.IN15 not in('Y', 'N')))
+        order By [$ORDERBYCLAUSE]
+    End-Select
+
+End-Procedure
+
+!------------------------------------------------------------
+!Check the Current balance of the items against their minimum level
+!------------------------------------------------------------
+Begin-Procedure Curbal
+
+    Begin-Select
+        Sum(CURBAL)          &fcurbal
+
+        Move &minlevel to #min
+        Move &fcurbal to #fcurbal
+
+        If (#fcurbal - #woqty) <= #min                  ! Current balance less reserved below minimum level or items from work orders to be ordered
+            Move #fcurbal to #qty
+            Let #poqty=0
+            Let #prqty=0
+            Let #rfqqty=0
+
+            Do RFQ_Check
+            Do PR_Check
+
+            If #rfqexists = 1
+                Let #rfq-pr-qty = #rfqqty
+                add #rfqqty to #qty
+            Else
+                Let #rfq-pr-qty = #prqty
+                add #prqty to #qty
+            End-If
+
+            Do PO_Check
+
+            Let #orderqty=0                                                                             ! If curbal + quantity on rfq's, pr's And po's still below the minimum reorder it
+            Let #orderqty = (#maxlevel - #poqty - #totalinspqty - #prqty - #rfqqty - #fcurbal + #woqty) ! add the quantity from the work order to the quantity to order total inspection quantity also taken into account now. RCooke.
+
+            If #conversion=0
+                Let #conversion=1
+            End-If
+
+            Let #orderqty_converted=round(((#orderqty/#conversion)-0.5),0)
+
+            If #orderqty_converted<0
+                Let #orderqty_converted=0
+            End-If
+
+            If (#qty - #woqty) <= #min And #orderqty >0   ! Current balance - reserved + quantities on PR's And PO's still below minimum level or items from work orders to be ordered Quantity to be ordered has to be greater than 0
+
+                If $Vendor!='ZZZZZZ'   ! VEndor is not null
+                    Let $tax1code='AZ' !Project Wales VAT Changes
+                    Let $currencycode=$default_currency
+                    Let #exchangerate=0
+                    Let $exchangedate=''
+                    Let $priceflag = 'N'   ! Is the item on a proce agreement'
+
+                    Do Price_Check        ! Find out If there is a price agreement for the item for this vEndor
+                    Do Companies          ! Find out If vEndor is valid And then create he POline for the item
+
+                    Move $Vendor to $lastvEndor
+                    Move $respasSet to $lastrespasset
+                    Move $prnumins to $lastprnumins
+                Else                  ! VEndor is null
+                    If $lastvEndor <> '*' And $lastvEndor <> 'ZZZZZZ'
+                    Do CalculateStatus !Set status for previous order     !This wont run If there is only one vEndor, as it will be *
+                End-If
+
+                Let $tax1code='AZ'
+                Let $currencycode=$default_currency
+                Let #exchangerate=0
+                Let $exchangedate=''
+                Let $contract=''
+
+                Do NULL_VEndor        ! Create a PR for a null vEndor
+
+                Move 'ZZZZZZ' to $lastvEndor
+            End-If
+        End-If
+    End-If
+
+        from    INVBALANCES
+        where   ITEMNUM = $itemnum
+        and     LOCATION = $location
+    End-Select
+
 End-Procedure !Curbal
 
-!---------------------------------------------------------------------------------
+!------------------------------------------------------------
+! Counts number of inspection items in status WAPPR
+!------------------------------------------------------------
 Begin-Procedure INSP_count
-!Counts number of inspection items in status WAPPR
 Begin-Select
 Sum(quantity) &inspqty
     Move &inspqty to #inspqty
@@ -658,8 +588,10 @@ End-Select
 
 
 End-Procedure
-!------------------------------------------------------------------------------------------------------------------
 
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Procedure Rfq_check
 !Checks If the items retieved are already on RFQ
     Move 0 to #rfqexists
@@ -682,8 +614,9 @@ from Rfqline Rfqline,
 End-Select
 End-Procedure !Rfq_check
 
-!------------------------------------------------------------------------------------------------------------------
-
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Procedure Pr_check
     Move 0 to #prexists
     Move 0 to #prqty
@@ -708,7 +641,7 @@ from Prline Prline,PR PR
  And prline.rfqnum is null !If there is an associated rfq then ignore the pr
 End-Select
 End-Procedure !Pr_check
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
 Begin-Procedure Po_check
 !Checks If the items retrieved are already on Purchase Order
 Move 0 to #totalinspqty
@@ -794,8 +727,8 @@ To_Char(po.exchangedate,'DD-MON-YYYY')                   &pricedate
   And Po.status in (select value from valuelist where listname='POSTATUS'
  !               And maxvalue in ('WAPPR','APPR','Print','FAX','EMAIL'))
                 And maxvalue in ('APPR','Print'))
- And ((trunc(sysdate)>=trunc(po.startdate))
- And  (trunc(sysdate)<=trunc(po.Enddate)))
+ And ((trunc(SYSDATE)>=trunc(po.startdate))
+ And  (trunc(SYSDATE)<=trunc(po.Enddate)))
 End-Select
 
     If $panum!=''
@@ -805,11 +738,9 @@ End-Select
     End-If
 End-Procedure
 
-
-
-
-!------------------------------------------------------------------------------------------------------------------
-
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Procedure Companies
  Move 0 to #found
 !next bit added with minval.....
@@ -834,12 +765,9 @@ c.company               &newcompany
 
 c.contact               &contact
  Move &contact to $contact
-!i.lastissuedate         &lastissuedate
 c.freightterms          &freightterms
 c.name                  &company
 
-!Nvl(c.tax1code,'G4')    &tax1code           !FOOTPrint 37373 Changed from 'GM' to 'G4'
-!Nvl(c.tax1code,'GM')    &tax1code           !FOOTPrint 76810 Changed from 'G4' to 'GM'
 Nvl(c.tax1code,'AZ')    &tax1code           !Project Wales - VAT Changes
 
  Do find_tax    !Remedy 000454667
@@ -941,53 +869,42 @@ If $exchangecurrent='Y'
  Else
     Do Print_notordered
  End-If
-!------------------------------------------------------------------------------------
  End-If
-
-
-
-
-
-
 
 
 End-Procedure !Companies
 
-!Remedy 000454667 - new procedure to find taxrate
+!------------------------------------------------------------
+! Remedy 000454667 - new procedure to find taxrate
+!------------------------------------------------------------
 Begin-Procedure find_tax
- Let #taxrate = ''
-Begin-Select
-Taxrate     &taxrate
-   Move &taxrate to #taxrate
- from tax
-where taxcode = &tax1code
-And Typecode = '1'
-End-Select
+    Let #taxrate = ''
+    Begin-Select
+        TAXRATE     &taxrate
+        Move &taxrate to #taxrate
+        from TAX
+        where TAXCODE = &tax1code
+        And TYPECODE = '1'
+    End-Select
 End-Procedure
 
-
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Procedure Null_vEndor
  Move 0 to #found
 Let $exchangecurrent='Y'                    ! Flag to say If currency is current
  Move $Vendor to $newcompany
- !Move 'G4' to $tax1code                     ! FOOTPrint 37373 Changed from 'GM' to 'G4'
-! Move 'GM' to $tax1code                     ! FOOTPrint 76810 Changed from 'G4' to 'GM'
 Move 'AZ' to $tax1code                     ! Project Wales VAT Changes
 
-!Default the taxrate to 'G4'                !FOOTPrint 37373 Changed from 'GM' to 'G4'
-!Default the taxrate to 'GM'                !FOOTPrint 76810 Changed from 'G4' to 'GM'
 Begin-Select
 Taxrate     &taxratenullvEnd
      Move &taxratenullvEnd to #taxrate
  from tax
-!where taxcode = 'G4'                        !FOOTPrint 37373 Changed from 'GM' to 'G4'
-!where taxcode = 'GM'                        !FOOTPrint 76810 Changed from 'G4' to 'GM'
 where taxcode = 'AZ'                        !Project Wales - VAT Changes
 And Typecode = '1'
 End-Select
 
- !Move 'G4' to $tax1code    !FOOTPrint 37373 Changed from 'GM' to 'G4'
-! Move 'GM' to $tax1code    !FOOTPrint 76810 Changed from 'G4' to 'GM'
 Move 'AZ' to $tax1code    !Project Wales VAT Changes
 
  Let $LASTPODATE=''
@@ -1016,35 +933,25 @@ Move 'AZ' to $tax1code    !Project Wales VAT Changes
 End-Procedure !null_vEndor
 
 
-
-
-
-
-!-----------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Procedure podate_get
-!Begin-Select
-!Max(po.requireddate)   &podate    ! ****** Temporary?
-! Move &podate to $lastpodate
-! from poline,po
-! where poline.ponum=po.ponum
-! And Poline.itemnum=$itemnum
-!End-Select
-Begin-Select
-lastdate        &lastdate
+    Begin-Select
+    lastdate        &lastdate
     Move &lastdate to $lastpodate
-from
-invvEndor
-where
-vEndor= $Vendor
-and
-itemnum=$itemnum
+    from    INVVENDOR
+    where   VENDOR= $Vendor
+    and     ITEMNUM=$itemnum
 End-Select
 
 
 
-
 End-Procedure
-!--------------------------------------------------------------------------------------------------------
+
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Procedure currency_get
 Begin-Select
 exchangerate  &exchangerate
@@ -1059,8 +966,10 @@ And currencycode=$currencycode                                 !162630
 Order By expiredate
 End-Select
 End-Procedure
-!-----------------------------------------------------------------------------------------------------------------
 
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Procedure Build_Pr
 !Build PR header record
 
@@ -1120,10 +1029,10 @@ Begin-Sql on-error=sql_error
                             PRLA3,PRLA4,PRLA5,PCARDNUM,PCARDType,
                             PCARDEXPDATE,APISEQ,INTERID,MIGCHANGEID,SEndERSYSID,
                             EXPDONE,PCARDVERIFICATION)
-                Values      ($prnumins,sysdate,sysdate+7,'MAXIMO',
+                Values      ($prnumins,SYSDATE,SYSDATE+7,'MAXIMO',
                             $Vendor,NULL,NULL,NULL,$freightterms,
                             NULL,NULL,$SHIPTO,NULL,$BILLTO,
-                            NULL,SubStr($Vendorname,1,34)||' STORES REORDER','WAPPR',sysdate,sysdate,
+                            NULL,SubStr($Vendorname,1,34)||' STORES REORDER','WAPPR',SYSDATE,SYSDATE,
                             'MAXIMO',0,3,'N',NULL,
                             'MS','N',SubStr($internalcontact,1,20),$internalphone,$purchasegroup,
                             NULL,$contract,NULL,NULL,NULL,
@@ -1140,7 +1049,7 @@ Begin-Sql on-error=sql_error
  Update AUTOKEY Set seed = seed+1 where TBNAME = 'PR';
 
  Insert into Prstatus (PRNUM,STATUS,CHANGEDATE,CHANGEBY,MEMO)
-                        Values ($prnumins,'WAPPR',sysdate,'MAXIMO','Auto Reorder');
+                        Values ($prnumins,'WAPPR',SYSDATE,'MAXIMO','Auto Reorder');
 
 End-Sql
 Commit
@@ -1153,16 +1062,10 @@ Let #arraycount=#arraycount+1
 End-Procedure !Build_Pr
 
 
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
+! This value retrived will be copied to the line as PRLINE.POLINEID must match, with POLINE.POLINEID
+!------------------------------------------------------------
 Begin-Procedure Build_Prline
-!Build PR Lines record
-!Begin-Select
-!This value retrived will be copied to the line as PRLINE.POLINEID must match, with POLINE.POLINEID
-!Max(polineid)+1  &nextval
-! Move &nextval to $nextval
-! from poline
-!End-Select
-
 Move '' to $nextval
 
 Begin-Select
@@ -1228,8 +1131,8 @@ Insert into Prline    (PRNUM,ITEMNUM,STORELOC,ORDERQTY,
                                 FINCNTRLID,PCARDVERIFICATION,MKTPLCITEM,VENDORPACKCODE,VENDORPACKQUANTITY,
                                 VENDORWAREHOUSE)
                     Values      ($prnumins,$itemnum,$location,#orderqty,
-                                $orderunit,#lastcost,1,NULL,sysdate+#deliverytime,
-                                NULL,sysdate,'MAXIMO',$itemdesc,NULL,
+                                $orderunit,#lastcost,1,NULL,SYSDATE+#deliverytime,
+                                NULL,SYSDATE,'MAXIMO',$itemdesc,NULL,
                                 NULL,NULL,NULL,NULL,#pldkey,
                                 $prwonum,'MAXIMO','N',NULL,NULL,
                                 NULL,NULL,NULL,NULL,NULL,
@@ -1242,7 +1145,7 @@ Insert into Prline    (PRNUM,ITEMNUM,STORELOC,ORDERQTY,
                                 NULL,'Y',$manufacturer,$modelnum,$catcode,
                                 NULL,0,NULL,0,#line,
                                 NULL,'STK',NULL,'N',$location,
- !REMEDY 000452195 (get latest price agreement number as inventory.il1 is not always Updated)
+ !REMEDY 000452195 (get latest price agreement number as INVENTORY.il1 is not always Updated)
  !                      (#lastcost*#orderqty),'N',$agreementno,'PRICE','N',
     ! Remedy 80005 Added Tax1 to loadedcost (NR)
                                 (#lastcost*#orderqty)+#Tax1,'N',$panum,$agreementpoType,'N',
@@ -1296,13 +1199,13 @@ Begin-Sql on-error=sql_error
                         Values    ($itemnum,$location,$Vendor,#minlevel,
                                   #maxlevel,'cat',NULL,#orderqty,$orderunit,
                                   #lastcost,$conversion,NULL,NULL,NULL,
-                                  NULL,$ponum,#fcurbal,NULL,sysdate+7,
+                                  NULL,$ponum,#fcurbal,NULL,SYSDATE+7,
                                   'MAXIMO',NULL,NULL,NULL,$glcontrolacc,
                                   NULL,NULL,$manufacturer,$modelnum,$catcode,
                                   NULL,NULL,NULL,NULL,NULL,
                                   NULL,NULL,NULL,NULL,NULL,
                                   NULL,NULL,NULL,NULL,NULL,
-!REMEDY 000452195 (get latest price agreement number as inventory.il1 is not always Updated)
+!REMEDY 000452195 (get latest price agreement number as INVENTORY.il1 is not always Updated)
 !                                 $agreementno,'PRICE',NULL,NULL);
                                   $panum,$agreementpoType,NULL,NULL);
 End-Sql
@@ -1310,15 +1213,11 @@ Commit
 
  Do PrintPO
 
-
-
-
-
 End-Procedure !Prline
-!------------------------------------------------------------------------------------------------------------------
 
-!------------------------------------------------------------------------------------------------------------------
-
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Procedure wo_check
 Begin-Select
 invreserve.reservedqty    &woreserved
@@ -1347,18 +1246,17 @@ End-Select
 End-Procedure
 
 
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Procedure Upd_total
-
-!***** Not used ****
-!Update the header screen with the Total loadedcost/PO
 Let $errplace='Error in uPD_TOTAL  : SELECT THEN Update'
 Begin-Select
 ponum                   &ponumins1
  Do Update
  from po
  where description like '%STORES REORDER%'
- And To_Date(statusdate,'DD-MON-YYYY') =  To_Date(sysdate,'DD-MON-YYYY')
+ And To_Date(statusdate,'DD-MON-YYYY') =  To_Date(SYSDATE,'DD-MON-YYYY')
 End-Select
 End-Procedure !Upd_total
 
@@ -1373,26 +1271,19 @@ End-Sql
 Commit
 End-Procedure !Update
 
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Procedure PrintPO
  Alter-Printer Font = {Arial} Point-Size = 7
  Print $itemnum                         (+1,1)
  Print $itemdesc                        (,10,33)!  wrap 40 5
-!Remedy Call 000476963 (added in19 column to report)
 If $reportformat='H'
  Print $inspectionrequired (,33)
 Else
  Print $in19                (,33)
 End-If
  Print #orderqty                        (,44)  edit 999999.99
-!Remedy Call 000476963 (reMoved lines below)
-!If $inspectionrequired = 'Y'
-! If $receiptscomplete = 'N'
-! If SubStr($postatus,1,1) != 'C'
-! Print $inspectionrequired              (,42)
-! End-If
-! End-If
-! End-If
  Print #lastcost                        (,51)  edit 99999999.99
  Let #wvalue = #orderqty * #lastcost
  Print #wvalue                          (,57)  edit 99999999.99
@@ -1416,7 +1307,9 @@ End-If
 
  End-Procedure !Printpo
 
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Procedure Print_notordered
  Alter-Printer Font = {Arial} Point-Size = 7
  Print $itemnum                         (+1,1)
@@ -1445,7 +1338,10 @@ End-If
 
 
  End-Procedure !Printpo
-!-----------------------------------------------------------------------------------------------------------------
+
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Footing 3
 !Footer section of the report
  graphic                                (+1,1,110) horz-line
@@ -1458,7 +1354,9 @@ Begin-Footing 3
  last-page                              (,63)
 End-Footing
 
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Procedure check_pr
 !Checks If the items retieved are already on Purchase Request
  Move 0 to #prexists
@@ -1473,7 +1371,10 @@ from Prline Prline,PR PR
  And Prline.Ponum is null
 End-Select
 End-Procedure
-!------------------------------------------------------------------------------------------------------------------
+
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Procedure check_po
 !Checks If the items retrieved are already on Purchase Order
 
@@ -1489,7 +1390,10 @@ from Poline pl,PO p
   And pl.receivedqty < pl.orderqty
 End-Select
 End-Procedure
-!------------------------------------------------------------------------------------------------------------------
+
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Procedure sql_error
 ! Print the error Position & Oracle SQL error, Then Stop the report.
  Print $errplace      (+2,1)
@@ -1499,8 +1403,9 @@ Begin-Procedure sql_error
  Stop quiet
 End-Procedure
 
-
-
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Procedure LDKEY_GET
 Begin-Select
 Max(LDKEY)+1      &PLDKEY
@@ -1513,10 +1418,10 @@ End-Select
 End-Procedure
 
 
-!------------------------------------------------------------------------------------------------------------------
-!Added as per WS137 AB
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Procedure supervisor_get
-
 Begin-Select
 iecontact    &supervisor
     Move &supervisor to $supervisor
@@ -1570,27 +1475,27 @@ Begin-Select
 varvalue    &pr_wf_revision
             Move &pr_wf_revision to #pr_wf_revision
 from
-maxvars
+MAXVARS
 where
-varname='PR_WF_REVISION'
+VARNAME='PR_WF_REVISION'
 End-Select
 
 Begin-Select
 varvalue    &pr_wf_nodeid
             Move &pr_wf_nodeid to #pr_wf_nodeid
 from
-maxvars
+MAXVARS
 where
-varname='PR_WF_NODEID'
+VARNAME='PR_WF_NODEID'
 End-Select
 
 Begin-Select
 varvalue    &pr_wf_processid
             Move &pr_wf_processid to #pr_wf_processid
 from
-maxvars
+MAXVARS
 where
-varname='PR_WF_PROCESSID'
+VARNAME='PR_WF_PROCESSID'
 End-Select
 
 
@@ -1612,7 +1517,7 @@ Commit
 
 Begin-Sql
 insert into wfinstance (WFID,RECORDKEY,ORIGINATOR,MAINTBNAME,REVISION,STARTTIME,CURRTASKSTARTTIME,ACTIVE)
-values (#WFID,$prWF,'MAXIMO','PR',#pr_wf_revision,sysdate,sysdate,'Y');
+values (#WFID,$prWF,'MAXIMO','PR',#pr_wf_revision,SYSDATE,SYSDATE,'Y');
 End-Sql
 Begin-Sql
 insert into wfcallstack (WFID,NODEID,PROCESSID,CALLSEQ,ACTIVE,PROCESSREV) VALUES
@@ -1630,7 +1535,7 @@ Print 'added to workflow' (,40)
 
 End-Procedure
 
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
 Begin-Procedure MinvalPR
 Let $minvalpr = 'NONE'
 Begin-Select
@@ -1643,7 +1548,7 @@ And status = 'MINVAL'
 End-Select
 
 End-Procedure !MinvalPO
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
 
 
 
@@ -1696,7 +1601,7 @@ Do calcTotalCost
 Begin-Sql on-error=sql_error
 
 Update PR Set totalcost = #PRtotalcost where prnum = $prnumins;
-Update PR Set changedate = sysdate where prnum = $prnumins;
+Update PR Set changedate = SYSDATE where prnum = $prnumins;
 
 End-Sql
 Commit
@@ -1736,7 +1641,7 @@ Max(prlinenum) &maxprlinenum
 End-Select
 End-Procedure !GetNextPOLine
 
-!-------------------------------------------------------------------------------------------------------
+!----------------------------------------------------------------------------------
 Begin-Procedure GetNextPRLine-normal
 
 Begin-Select
@@ -1799,7 +1704,7 @@ Else
     Do AddStatus
 End-If
 End-Procedure !CalculateStatus
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
 
 Begin-Procedure UpdatePRStatus($prnum,$status)
 !Print 'IN Update PR STATUS' (+1,1) BOLD  !debug
@@ -1833,14 +1738,14 @@ Let $changeby = ''''|| $_username ||''''
 Begin-Sql on-error=sql_error
 
 Update [$_schema]pr Set status = [$addstatus] where prnum = [$prnum];
-Update [$_schema]pr Set statusdate = sysdate where prnum = [$prnum];      !Added RCooke.
+Update [$_schema]pr Set statusdate = SYSDATE where prnum = [$prnum];      !Added RCooke.
 
 End-Sql
 
 Begin-Sql on-error=sql_error
 
 insert into [$_schema]prstatus (PrNUM,STATUS,CHANGEBY,CHANGEDATE,MEMO)
-    values ([$prnum],[$addstatus],[$changeby],sysdate,'AUTO REORDER')
+    values ([$prnum],[$addstatus],[$changeby],SYSDATE,'AUTO REORDER')
 End-Sql
 
 Commit
@@ -1848,7 +1753,7 @@ Commit
 If $status='EMAIL' or $status='FAX'
 Begin-Sql
 
-Update [$_schema]pr Set orderdate= sysdate where prnum=[$prnum];        !Added WS137.
+Update [$_schema]pr Set orderdate= SYSDATE where prnum=[$prnum];        !Added WS137.
 
 End-Sql
 Commit
@@ -1882,47 +1787,35 @@ End-If
 
 End-Procedure !EndLines
 
-
-
-Begin-Procedure debug($Procedure)
-!Begin-Sql
-!insert into maximo.debugtable(procedure, datetime) values ($procedure, sysdate)
-!End-Sql
-!Commit
-End-Procedure
-
-
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Procedure UpdateRequiredDates
-Begin-Select
-min(reqdeliverydate) &minreqdeliverydateMinval !Remedy 43719 - Change Max to Min
-    Move &minreqdeliverydateMinval to $minreqdeliverydateMinval !Remedy 43719 - Change Max to Min
-from
-prline
-where
-prnum=$lastprnumins
-End-Select
-Begin-Sql
+    Begin-Select
+        min(REQDELIVERYDATE) &minreqdeliverydateMinval !Remedy 43719 - Change Max to Min
+            Move &minreqdeliverydateMinval to $minreqdeliverydateMinval !Remedy 43719 - Change Max to Min
+        from    PRLINE
+        where   PRNUM=$lastprnumins
+    End-Select
 
-Update prline Set reqdeliverydate=$minreqdeliverydateMinval where prnum=$lastprnumins; !Remedy 43719 - Change Max to Min
-Update pr Set requireddate=$minreqdeliverydateMinval where prnum=$lastprnumins; !Remedy 43719 - Change Max to Min
-
-End-Sql
-Commit
-
+    Begin-Sql
+        Update PRLINE set REQDELIVERYDATE = $minreqdeliverydateMinval where PRNUM = $lastprnumins; !Remedy 43719 - Change Max to Min
+        Update PR set REQUIREDDATE = $minreqdeliverydateMinval where PRNUM = $lastprnumins; !Remedy 43719 - Change Max to Min
+    End-Sql
 
 End-Procedure
 
 
-!--------------------------------------------------------------
-
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Procedure AddStatus   !Changes the PR to status='WAPPR'
-
-Do UpdatePRStatus($lastprnumins,'WAPPR')
-
-
+    Do UpdatePRStatus($lastprnumins,'WAPPR')
 End-Procedure !AddStatus
 
-
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Procedure GetDllFlagsValues
 Do debug('GETDLLFLAGSVALUES')
 Begin-Select
