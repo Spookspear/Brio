@@ -1,14 +1,15 @@
-!-------------------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------
 !  FILENAME     : Reordfan.sqr
 !  AUTHOR       : Andrew Bratton (Thanks to Alan Stevens (BPD Consulting Ltd))
 !  DATE         : 29/09/20041
-!-------------------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------
 !  DESCRIPTION  : Fast track and Engineering Contract Items Reorder Report
-!-------------------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------
 !  MODIFICATION HISTORY
 !  DATE           INITIALS  NOTES
 !  03/01/02       AS        Added include file Input.h as requested, therefore needed to $Schema to
 !                           prefix the tables
+!
 !  22/04/02       BH        Amended the program to look at all entries in the INVENTORY table for the warehouse
 !                           entered. Only STK and non outside items are included. The program then works out
 !                           how many items are on an outstanding PR, PO or reserved on a workorder. It then
@@ -19,7 +20,6 @@
 !
 !                           2 extra variables have been added to MAXVARS PURCH_GROUP,REORDER_WONUM
 !                           BASECURRENCY1 is used for the default currency
-!
 !
 !                           Glcontrolacc is got frpm locations for the warehouse
 !                           Internal contact & phone number are got from labor for the user running report
@@ -51,34 +51,37 @@
 !                           to REDSTK in that they should not be reordered but they can be issued until the existing stock
 !                           has been used.
 !   30/07/04      CAA       Remedy Call 000476963 (added in19 column to report)
-!   23/11/04        RC      Changed to use IN15 instead of IN12 field.
-!   24/11/04        RC      Now takes into account Conversion factors.
-!   02/12/04        RC      Fixed a number of bugs.
-!   10/12/04        RC      Change line 1291 Change to stop multiple printing.
-!   27/01/05        RC      Added ability to look at more than one storeroom
-!   03/10/05        A Newman Remedy 43719 - Change Max to Min for required delivery dates
+!   23/11/04      RC        Changed to use IN15 instead of IN12 field.
+!   24/11/04      RC        Now takes into account Conversion factors.
+!   02/12/04      RC        Fixed a number of bugs.
+!   10/12/04      RC        Change line 1291 Change to stop multiple printing.
+!   27/01/05      RC        Added ability to look at more than one storeroom
+!   03/10/05      A Newman  Remedy 43719 - Change Max to Min for required delivery dates
 !   01/09/06      N Rhodes  Remedy 80005 - Added tax amount to loaded cost on POLINE to fix header cost
 !   16/09/07      R Nunn    Remedy 152666 - Add Item Criticality column C'to report and remove 'CB' from report
 !   19/09/07      R Nunn    Remedy 176424 - Add Payment Terms into PO Header
 !   13/12/07      R Nunn    Remedy 162630 - Correct exchangerate value
 !   29/05/08      R Nunn    Remedy 197597 - Problem with Order Quantity
 !   22/07/08      R Nunn    footPrint 24886- Remove double spacing from report Print out
-!   28/11/08      R Nunn     footPrint 37373 tax code change from 'GM' to 'g4'
+!   28/11/08      R Nunn    footPrint 37373 tax code change from 'GM' to 'g4'
 !   15/05/09      R Nunn    footPrint 51980  Remove FAX and Email status. Keep PO to 'WAPPR', 'MINVAL' status only
 !   02/11/09      R Nunn    footPrint 69505  To allow automation of report to run where Item/in15 = 'N' old report name = REORDGEC
-!   15/12/09      R Nunn     footPrint 76810 tax code change from 'G4' to 'GM'
-!   03/02/2010      A Newman    footPrint 82410 - POLines pick up incorrect Price Agreement for item
+!   15/12/09      R Nunn    footPrint 76810 tax code change from 'G4' to 'GM'
+!   03/02/2010    A Newman  footPrint 82410 - POLines pick up incorrect Price Agreement for item
 !   30/11/10      G Stephen Project Wales - VAT Changes to 'AZ'
 !   14/12/10      G Stephen Project Wales - Add new purchase groups
-!-------------------------------------------------------------------------------------------------------------
+!-----------------------------------------------------------------
 
+!------------------------------------------------------------
+! Start of program
+!------------------------------------------------------------
 Begin-Setup
 
     #Define Arial               4
     #Define Courier             3
     #Define Times               5
 
-    #Define RepName             'REORDFAN.SQT'
+    #Define RepName             'REORDFAY.SQT'
     #Define PONumber            'PO Number'
     #Define Statusset           'Status set to'
     #Define MinvalMsg           'Note that previous status was MINVAL'
@@ -136,8 +139,9 @@ End-Setup
 #Define p5prompt 'Enter third Warehouse'
 #Include 'Input.h'
 
-!------------------------------------------------------------------------------------------------------------------
-
+!------------------------------------------------------------
+! Heading
+!------------------------------------------------------------
 Begin-Heading 9
     Print-Image logo                                (1,100)
     Alter-Printer Font = {Arial} Point-Size = 10
@@ -191,7 +195,9 @@ Begin-Heading 9
 
 End-Heading
 
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
+! Program
+!------------------------------------------------------------
 Begin-Program
     Let #line = 1
     Let #mrfirst = 1
@@ -246,7 +252,9 @@ Begin-Program
 
 End-Program
 
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
+! Check user input
+!------------------------------------------------------------
 Begin-Procedure Check-Input
     Let $Storeroom1 = Upper($P3)
     Let $storeroom2 = Upper($P4)
@@ -312,7 +320,9 @@ Begin-Procedure Check-Input
 
 End-Procedure
 
-!-------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
+! Clear out reorder table
+!------------------------------------------------------------
 Begin-Procedure Reorder
     Let $errplace='Error in Reorder : Delete From Reorder'
 
@@ -323,9 +333,10 @@ Begin-Procedure Reorder
 
 End-Procedure
 
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
+! Gets date 6 months ago from today
+!------------------------------------------------------------
 Begin-Procedure Date
-    !Gets date 6 months ago from today
     Begin-Sql
         Alter session set nls_date_format = 'DD-MON-YYYY';
     End-Sql
@@ -340,8 +351,9 @@ Begin-Procedure Date
 
 End-Procedure
 
-
+!------------------------------------------------------------
 ! Get the gldebitaccnt from the locations file for the warehouse entered
+!------------------------------------------------------------
 Begin-Procedure GLAcc_Get
     Let $glcontrolacc=' '
 
@@ -355,7 +367,9 @@ Begin-Procedure GLAcc_Get
 
 End-Procedure
 
+!------------------------------------------------------------
 ! Get the internal phone number and location
+!------------------------------------------------------------
 Begin-Procedure Labour_Get
 
     Begin-Select
@@ -368,8 +382,9 @@ Begin-Procedure Labour_Get
 
 End-Procedure
 
-
+!------------------------------------------------------------
 ! Get the workorder number
+!------------------------------------------------------------
 Begin-Procedure WONum_Get
 
     Begin-Select
@@ -382,7 +397,9 @@ Begin-Procedure WONum_Get
 
 End-Procedure
 
+!------------------------------------------------------------
 ! Get the default currency
+!------------------------------------------------------------
 Begin-Procedure Default_Currency_Get
 
     Let $default_currency='GBP'
@@ -395,8 +412,9 @@ Begin-Procedure Default_Currency_Get
 
 End-Procedure
 
-
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
+! Main
+!------------------------------------------------------------
 Begin-Procedure Main
     Let $lastvendor = '*'
     Let #itemld=0
@@ -465,9 +483,9 @@ Begin-Procedure Main
 
 End-Procedure
 
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
 ! Check the Current balance of the items against their minimum level
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
 Begin-Procedure CurBal
 
     Begin-Select
@@ -540,6 +558,8 @@ Begin-Procedure CurBal
 End-Procedure
 
 !------------------------------------------------------------
+! Update Tax1 Value
+!------------------------------------------------------------
 Begin-Procedure UpdateTax1Value
     Begin-Select
         Sum(TAX1) &sumTax1 / #sumtax1
@@ -556,6 +576,8 @@ Begin-Procedure UpdateTax1Value
 
 End-Procedure
 
+!------------------------------------------------------------
+! Update PO Req Delivery Date
 !------------------------------------------------------------
 Begin-Procedure UpdatePOReqDeliveryDate
     Begin-Select
@@ -577,7 +599,9 @@ Begin-Procedure UpdatePOReqDeliveryDate
     End-Sql
 End-Procedure
 
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Procedure PR_Check
     move 0 to #prexists
     move 0 to #prqty
@@ -605,9 +629,9 @@ Begin-Procedure PR_Check
 
 End-Procedure
 
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
 ! Checks If the items retrieved are already on Purchase Order
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
 Begin-Procedure PO_Check
     move 0 to #poexists
     move 0 to #poqty
@@ -646,9 +670,9 @@ Begin-Procedure PO_Check
 
 End-Procedure
 
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
 ! Find out If item is on a current price agreement. If so use the unitcost
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
 Begin-Procedure Price_Check
     Let $contract=''
     Let $panum=''
@@ -707,10 +731,9 @@ Begin-Procedure Price_Check
 
 End-Procedure
 
-
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
 ! $vendor <> $lastvendor                        !Do a new po
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
 Begin-Procedure HandleLines
     move 0 to #found
 
@@ -821,9 +844,9 @@ Begin-Procedure HandleLines
 
 End-Procedure
 
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
 ! If the item already exist on the po then add it to the same line (increase qty) otherwise add new line.
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
 Begin-Procedure Update_MinVal_Line
     Let $insertNewLine=''
     Let #linenumx=0
@@ -878,9 +901,9 @@ Begin-Procedure Update_MinVal_Line
 
 End-Procedure
 
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
 ! Totalcost should be the sum of the linecost and the tax
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
 Begin-Procedure CalcTotalCost
     Begin-Select
             Sum(LINECOST)   &linecostsum    / #linecostsum
@@ -895,9 +918,9 @@ Begin-Procedure CalcTotalCost
 
 End-Procedure
 
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
 ! new procedure to find taxrate
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
 Begin-Procedure Find_Tax
     Let #taxrate = ''
 
@@ -910,8 +933,9 @@ Begin-Procedure Find_Tax
 
 End-Procedure
 
-
-!-----------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Procedure PODate_Get
 
     Begin-Select
@@ -926,7 +950,9 @@ Begin-Procedure PODate_Get
 
 End-Procedure
 
-!--------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Procedure Currency_Get
     Begin-Select
                 EXCHANGERATE                    &exchangerate   / #exchangerate
@@ -942,9 +968,9 @@ Begin-Procedure Currency_Get
     End-Select
 End-Procedure
 
-!-----------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
 ! Build PO header record At present there ae no prefixes on PO numbers. This will work If there is one
-!-----------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
 Begin-Procedure Build_PO
 
     Begin-Select
@@ -1030,9 +1056,9 @@ Begin-Procedure Build_PO
     commit
 End-Procedure
 
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
 ! Build PO Lines record
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
 Begin-Procedure Build_POLine
 
     Begin-Select
@@ -1173,9 +1199,9 @@ Begin-Procedure Build_POLine
 
 End-Procedure
 
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
 
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
 Begin-Procedure WO_Check
 
     Begin-Select
@@ -1196,26 +1222,9 @@ Begin-Procedure WO_Check
 
 End-Procedure
 
-!------------------------------------------------------------------------------------------------------------------
-! Not used
-!------------------------------------------------------------------------------------------------------------------
-Begin-Procedure Update
-    Let $errplace='Error in Update : Update PO set totalcost'
-
-    Begin-Sql on-error=SQL_Error
-        Update [$Schema] PO
-            set TOTALCOST = (select Sum(LOADEDCOST) + Sum(TAX1)
-                              from  [$schema] POLINE
-                              where PONUM = &ponumins1)
-            where PONUM = &ponumins1
-    End-Sql
-    commit
-
-End-Procedure
-
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
 ! Uses #orderqty not orderqty_real - Andrea - 09 dec 2004
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
 Begin-Procedure PrintPO
     Alter-Printer Font = {Arial} Point-Size =  8
     Print $itemnum                          (+1,1)
@@ -1241,7 +1250,9 @@ Begin-Procedure PrintPO
 
 End-Procedure
 
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
+! Say not ordered
+!------------------------------------------------------------
 Begin-Procedure Print_NotOrdered
     Alter-Printer Font = {Arial} Point-Size = 8
     Print $itemnum                          (+1,1)
@@ -1267,9 +1278,9 @@ Begin-Procedure Print_NotOrdered
 
 End-Procedure
 
-!-----------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
 ! Footer section of the report
-!-----------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
 Begin-Footing 3
     graphic                                 (+1,1,110) horz-line
     Print 'Report Name - '                  (+1,1) BOLD
@@ -1281,15 +1292,17 @@ Begin-Footing 3
     last-page                               (,63)
 End-Footing
 
-
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
 ! Print the error position & Oracle SQL error, Then stop the report.
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
 Begin-Procedure SQL_Error
     Print $errplace      (+2,1)
     Print $sql-error     (+3,5)
 End-Procedure
 
+!------------------------------------------------------------
+! Get the ldkey
+!------------------------------------------------------------
 Begin-Procedure LDKEY_Get
     Begin-Select
             MAX(LDKEY)+1      &PLDKEY / #PLDKEY
@@ -1299,7 +1312,9 @@ Begin-Procedure LDKEY_Get
     End-Select
 End-Procedure
 
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Procedure MinValPO
 
     Let $minvalpo = 'NONE'
@@ -1313,7 +1328,9 @@ Begin-Procedure MinValPO
 
 End-Procedure
 
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Procedure GetNextPOLine
 
     Begin-Select
@@ -1333,8 +1350,9 @@ Begin-Procedure GetNextPOLine
 
 End-Procedure
 
-!-------------------------------------------------------------------------------------------------------
-
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Procedure GetNextPOLine-Normal
     Begin-Select
             max(POLINENUM)      &maxpolinenum-x         ! if null set to 1 otherwise add 1 to retunred value
@@ -1351,9 +1369,9 @@ Begin-Procedure GetNextPOLine-Normal
 
 End-Procedure
 
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
 ! On Finishing adding PO lines for vendor
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
 Begin-Procedure CalculateStatus
     move 0 to #pototcost
     move 0 to #pominval
@@ -1396,7 +1414,9 @@ Begin-Procedure CalculateStatus
 
 End-Procedure
 
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Procedure UpdateRequiredDates
     Begin-Select
             min(REQDELIVERYDATE)        &minreqdeliverydateMinval  / $minreqdeliverydateMinval
@@ -1420,7 +1440,9 @@ Begin-Procedure UpdateRequiredDates
 
 End-Procedure
 
-
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Procedure AddStatus
 
     If #POTOTCOST = 0
@@ -1435,8 +1457,8 @@ Begin-Procedure AddStatus
                     Do CanFax($lastvendor,$CanFax)
 
                     If $CanFax = 'Y'
-                        Do UpdatePOStatus($lastponumins,'FAX')
-                        !Do UpdatePOStatus($lastponumins,'WAPPR')
+                        !Do UpdatePOStatus($lastponumins,'FAX')
+                        Do UpdatePOStatus($lastponumins,'WAPPR')
                         Break
                     Else
                         Print {NoFax} (+1,5)
@@ -1446,8 +1468,8 @@ Begin-Procedure AddStatus
 
                     Do CanEMail($lastvendor,$CanEMail)
                     If $CanEMail = 'Y'
-                        Do UpdatePOStatus($lastponumins,'EMAIL') 51980
-                        !Do UpdatePOStatus($lastponumins,'WAPPR')  !51980
+                        !Do UpdatePOStatus($lastponumins,'EMAIL') 51980
+                        Do UpdatePOStatus($lastponumins,'WAPPR')  !51980
                         Break
                     Else
                         Print {NoEMail} (+1,5)
@@ -1482,10 +1504,10 @@ Begin-Procedure AddStatus
 
 End-Procedure
 
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
 ! If prepared to write an extra line Report that MINVAL PO status change
 ! If approving the order then check that the vendor is not disqualified....
-!------------------------------------------------------------------------------------------------------------------
+!------------------------------------------------------------
 Begin-Procedure UpdatePOStatus( $ponum, $status )
 
     If $status='EMAIL' or $status='FAX'
@@ -1552,6 +1574,9 @@ Begin-Procedure UpdatePOStatus( $ponum, $status )
 
 End-Procedure
 
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Procedure GetDllFlagsValues
 
     Begin-Select
@@ -1604,6 +1629,9 @@ Begin-Procedure GetDllFlagsValues
 
 End-Procedure
 
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Procedure GetApprovalLimit
     Let $appruser = ''''|| $username ||''''
     move 0 to #approvallimit
@@ -1621,6 +1649,9 @@ Begin-Procedure GetApprovalLimit
 
 End-Procedure
 
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Procedure CanFax($vendor,:$CanFax)
     Let $CanFax = 'N'
     Let $wherevendor = ''''||$vendor||''''
@@ -1638,6 +1669,9 @@ Begin-Procedure CanFax($vendor,:$CanFax)
 
 End-Procedure
 
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Procedure CanEMail($vendor,:$CanEMail)
     Let $CanEMail = 'N'
     Let $wherevendor = ''''||$vendor||''''
@@ -1654,6 +1688,9 @@ Begin-Procedure CanEMail($vendor,:$CanEMail)
 
 End-Procedure
 
+!------------------------------------------------------------
+!
+!------------------------------------------------------------
 Begin-Procedure EndLines ($ponum, $status)
     If #POTOTCOST = 0 and $status='WAPPR'
         Print 'PO totalcost is 0.00 - Status set to WAPPR' (+1,5)
