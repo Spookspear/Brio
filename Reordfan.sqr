@@ -1457,8 +1457,8 @@ Begin-Procedure AddStatus
                     Do CanFax($lastvendor,$CanFax)
 
                     If $CanFax = 'Y'
-                        !Do UpdatePOStatus($lastponumins,'FAX')
-                        Do UpdatePOStatus($lastponumins,'WAPPR')
+                        Do UpdatePOStatus($lastponumins,'FAX')
+                        !Do UpdatePOStatus($lastponumins,'WAPPR')
                         Break
                     Else
                         Print {NoFax} (+1,5)
@@ -1468,8 +1468,8 @@ Begin-Procedure AddStatus
 
                     Do CanEMail($lastvendor,$CanEMail)
                     If $CanEMail = 'Y'
-                        !Do UpdatePOStatus($lastponumins,'EMAIL') 51980
-                        Do UpdatePOStatus($lastponumins,'WAPPR')  !51980
+                        Do UpdatePOStatus($lastponumins,'EMAIL') 51980
+                        !Do UpdatePOStatus($lastponumins,'WAPPR')  !51980
                         Break
                     Else
                         Print {NoEMail} (+1,5)
