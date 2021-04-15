@@ -1,7 +1,7 @@
 !----------------------------------------------------------------
 !  FILENAME     : Reordfan.sqr
 !  AUTHOR       : Andrew Bratton (Thanks to Alan Stevens (BPD Consulting Ltd))
-!  DATE         : 29/09/20041
+!  DATE         : 29/09/2001
 !----------------------------------------------------------------
 !  DESCRIPTION  : Fast track and Engineering Contract Items Reorder Report
 !----------------------------------------------------------------
@@ -1301,7 +1301,7 @@ Begin-Procedure SQL_Error
 End-Procedure
 
 !------------------------------------------------------------
-! Get the ldkey
+! LDKEY_Get - Get the ldkey
 !------------------------------------------------------------
 Begin-Procedure LDKEY_Get
     Begin-Select
