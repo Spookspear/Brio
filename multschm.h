@@ -12,7 +12,7 @@ begin-procedure GetSchema( :$schema, :$where )
 	! we need to put the schema in front of the tabel.
 	move 1 to #where-sel
 
-	! use loop here is because we don't know how many sub-select in the where clause yet.
+	! use loop here is because we dont know how many sub-select in the where clause yet.
 	while #where-sel
 
 		let #where-sel = instr( lower($where), 'select', 1 )

@@ -157,12 +157,12 @@ Begin-Heading 9
     If $storeroom2<>''
         Let $warehouses=$warehouses|| ', ' || $storeroom2
 
-        If $storeroom3<>''
-            Let $warehouses=$warehouses || ', ' || $storeroom3
+        If $Storeroom3<>''
+            Let $warehouses=$warehouses || ', ' || $Storeroom3
         End-If
     Else
-        If $storeroom3<>''
-            Let $warehouses=$warehouses|| ', ' || $storeroom3
+        If $Storeroom3<>''
+            Let $warehouses=$warehouses|| ', ' || $Storeroom3
         End-If
     End-If
 
@@ -258,7 +258,7 @@ End-Program
 Begin-Procedure Check-Input
     Let $Storeroom1 = Upper($P3)
     Let $storeroom2 = Upper($P4)
-    Let $STOREROOM3 = Upper($P5)
+    Let $Storeroom3 = Upper($P5)
 
     !Checks to If there is a valid Input
     If ($where = '' or $where = '*')
@@ -367,32 +367,27 @@ Begin-Procedure GLAcc_Get
 
 End-Procedure
 
-!------------------------------------------------------------
-! Get the internal phone number and location
-!------------------------------------------------------------
+!--------------------------------------------------------
+! Labour_Get - Get the internal phone number and location
+!--------------------------------------------------------
 Begin-Procedure Labour_Get
-
     Begin-Select
-        LABOR.NAME     &laborname   /   $internalcontact
-        LABOR.CALLID   &phonenum    /   $internalphone
-
-        from [$schema] LABOR
+              LABOR.NAME     &laborname / $internalcontact
+              LABOR.CALLID   &phonenum / $internalphone
+        from  LABOR
         where Upper(LABORCODE) = Upper($username)
     End-Select
-
 End-Procedure
 
 !------------------------------------------------------------
 ! Get the workorder number
 !------------------------------------------------------------
 Begin-Procedure WONum_Get
-
     Begin-Select
         MAXVARS.VARVALUE    &powonum / $powonum
-        from [$schema]MAXVARS
+        from MAXVARS
         where VARNAME = 'REORDER_WONUM'
     End-Select
-
     Let $powonum = ''                      ! Workorder no longer required on PR (for now?) BH - 14-May-02
 
 End-Procedure
@@ -401,9 +396,7 @@ End-Procedure
 ! Get the default currency
 !------------------------------------------------------------
 Begin-Procedure Default_Currency_Get
-
     Let $default_currency='GBP'
-
     Begin-Select
         MAXVARS.VARVALUE    &currency / $default_currency
         from [$schema]MAXVARS
@@ -472,7 +465,7 @@ Begin-Procedure Main
         and (   ITEM.IN15 = 'N')
         and (   INVENTORY.LOCATION = $Storeroom1
             or  INVENTORY.LOCATION = $storeroom2
-            or  INVENTORY.LOCATION = $storeroom3)
+            or  INVENTORY.LOCATION = $Storeroom3)
         [$ROIROR]
 
         order by
@@ -923,12 +916,11 @@ End-Procedure
 !------------------------------------------------------------
 Begin-Procedure Find_Tax
     Let #taxrate = ''
-
     Begin-Select
-        TAXRATE     &taxrate / #taxrate
-        from TAX
-        where TAXCODE = &tax1code
-        and TYPECODE = '1'
+                TAXRATE     &taxrate / #taxrate
+        from    TAX
+        where   TAXCODE = &tax1code
+        and     TYPECODE = '1'
     End-Select
 
 End-Procedure
@@ -937,17 +929,12 @@ End-Procedure
 !
 !------------------------------------------------------------
 Begin-Procedure PODate_Get
-
     Begin-Select
-            LASTDATE        &lastdate / $lastpodate
-        from
-            INVVENDOR
-        where
-            VENDOR = $vendor
-        and
-            ITEMNUM = $itemnum
+                LASTDATE        &lastdate / $lastpodate
+        from    INVVENDOR
+        where   VENDOR = $vendor
+        and     ITEMNUM = $itemnum
     End-Select
-
 End-Procedure
 
 !------------------------------------------------------------
@@ -1316,16 +1303,14 @@ End-Procedure
 !
 !------------------------------------------------------------
 Begin-Procedure MinValPO
-
     Let $minvalpo = 'NONE'
     Begin-Select
-            ponum   &minvalpo / $minvalpo
-            from PO
-        where VENDOR = $vendor
-        and   POTYPE = 'PART'
-        and  STATUS = 'MINVAL'
+                PONUM   &minvalpo / $minvalpo
+        from    PO
+        where   VENDOR = $vendor
+        and     POTYPE = 'PART'
+        and     STATUS = 'MINVAL'
     End-Select
-
 End-Procedure
 
 !------------------------------------------------------------
@@ -1401,7 +1386,7 @@ Begin-Procedure CalculateStatus
 
         !If PO Total value less than PO Vendor Minimum Value
         If #pototcost < #pominval
-            Do UpdatePOStatus($lastponumins,'MINVAL')
+            Do UpdatePOStatus( $lastponumins, 'MINVAL' )
         Else
             !The Minval PO will now be approved (set to EMAIL or FAX)
             !Set all required by dates to the maximo required by date.
