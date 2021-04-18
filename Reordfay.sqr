@@ -1,7 +1,7 @@
 !----------------------------------------------------------------
 !  FILENAME     : Reordfan.sqr
 !  AUTHOR       : Andrew Bratton (Thanks to Alan Stevens (BPD Consulting Ltd))
-!  DATE         : 29/09/20041
+!  DATE         : 29/09/2001
 !----------------------------------------------------------------
 !  DESCRIPTION  : Fast track and Engineering Contract Items Reorder Report
 !----------------------------------------------------------------
@@ -9,7 +9,6 @@
 !  DATE           INITIALS      NOTES
 !  03/01/2002     AS            Added include file Input.h as requested, therefore needed to $Schema to
 !                               prefix the tables
-!
 !  22/04/2002     BH            Amended the program to look at all entries in the INVENTORY table for the warehouse
 !                               entered. Only STK and non outside items are included. The program then works out
 !                               how many items are on an outstanding PR, PO or reserved on a workorder. It then
@@ -30,18 +29,13 @@
 !
 !                               The price used is the LASTCOST unless there is a current price agreement. If there
 !                               is the unit price is used from it. The agreement number and PA number are
-!                               printed on the report
-!   12/8/2002     APC           Added inspection required flag to be transferred
-!
+!                               Printed on the report
+!   12/08/2002    APC           Added inspection required flag to be transferred
 !   17/09/2002    BH            Changed the search on PR,PO and Workorder to use maxvalue of status from valuelist
-!
 !   12/03/2003    CAA           Included column for inspection items, prints Y If receiptscomplete = N,
 !                               inspectionrequired = Y and status not COMP or CLOSE.
-!
 !   12/03/2003    CAA           Amended WO_Check and initialise prqty to zero.
-!
 !   28/01/2004    CAA           USE PRICE AGREEMENTS THAT ARE APPROVED OR Print STATUS ONLY - REMEDY 000452195 (same as REMEDY 000450935)
-!
 !   18/02/2004    CAA           Remedy 000454667 - calculate tax fro line) and REMEDY 000452195
 !                               (get latest price agreement number as INVENTORY.il1 is not always updated)
 !   26/02/2004    JM            Make sure that the exchangerate is always set to 1 for GBP PRs
