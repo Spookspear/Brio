@@ -5,71 +5,72 @@
 !----------------------------------------------------------------
 !  DESCRIPTION  : Fast track and Engineering Contract Items Reorder Report
 !----------------------------------------------------------------
-!  MODIFICATION HISTORY
-!  DATE           INITIALS  NOTES
-!  03/01/02       AS        Added include file Input.h as requested, therefore needed to $Schema to
-!                           prefix the tables
+!  MODIFICATION   HISTORY
+!  DATE           INITIALS      NOTES
+!  03/01/2002     AS            Added include file Input.h as requested, therefore needed to $Schema to
+!                               prefix the tables
 !
-!  22/04/02       BH        Amended the program to look at all entries in the INVENTORY table for the warehouse
-!                           entered. Only STK and non outside items are included. The program then works out
-!                           how many items are on an outstanding PR, PO or reserved on a workorder. It then
-!                           checks to see If CURBAL - Qty reserved on workorders is less then MINLEVEL (This
-!                           has got to be > zero. It then uses the following calculation to work out the
-!                           reorder quantity.
-!                           MAXLEVEL - QTY on PR - QTY on PO - CURBAL + QTY reserved on Workorders.
+!  22/04/2002     BH            Amended the program to look at all entries in the INVENTORY table for the warehouse
+!                               entered. Only STK and non outside items are included. The program then works out
+!                               how many items are on an outstanding PR, PO or reserved on a workorder. It then
+!                               checks to see If CURBAL - Qty reserved on workorders is less then MINLEVEL (This
+!                               has got to be > zero. It then uses the following calculation to work out the
+!                               reorder quantity.
+!                               MAXLEVEL - QTY on PR - QTY on PO - CURBAL + QTY reserved on Workorders.
 !
-!                           2 extra variables have been added to MAXVARS PURCH_GROUP,REORDER_WONUM
-!                           BASECURRENCY1 is used for the default currency
+!                               2 extra variables have been added to MAXVARS PURCH_GROUP,REORDER_WONUM
+!                               BASECURRENCY1 is used for the default currency
 !
-!                           Glcontrolacc is got frpm locations for the warehouse
-!                           Internal contact & phone number are got from labor for the user running report
+!                               Glcontrolacc is got frpm locations for the warehouse
+!                               Internal contact & phone number are got from labor for the user running report
 !
-!                           The program creates WAPPR PR's for each vendor to be ordered for. The section to
-!                           create PO's is not called at present. This includes the UPD_TOTAL and UPDATE
-!                           procedures
+!                               The program creates WAPPR PR's for each vendor to be ordered for. The section to
+!                               create PO's is not called at present. This includes the UPD_TOTAL and UPDATE
+!                               procedures
 !
-!                           The price used is the LASTCOST unless there is a current price agreement. If there
-!                           is the unit price is used from it. The agreement number and PA number are
-!                           printed on the report
-!   12/8/02       APC       Added inspection required flag to be transferred
+!                               The price used is the LASTCOST unless there is a current price agreement. If there
+!                               is the unit price is used from it. The agreement number and PA number are
+!                               printed on the report
+!   12/8/2002     APC           Added inspection required flag to be transferred
 !
-!   17/09/02      BH        Changed the search on PR,PO and Workorder to use maxvalue of status from valuelist
+!   17/09/2002    BH            Changed the search on PR,PO and Workorder to use maxvalue of status from valuelist
 !
-!   12/03/03      CAA       Included column for inspection items, prints Y If receiptscomplete = N,
-!                           inspectionrequired = Y and status not COMP or CLOSE.
+!   12/03/2003    CAA           Included column for inspection items, prints Y If receiptscomplete = N,
+!                               inspectionrequired = Y and status not COMP or CLOSE.
 !
-!   12/03/03      CAA       Amended WO_Check and initialise prqty to zero.
+!   12/03/2003    CAA           Amended WO_Check and initialise prqty to zero.
 !
-!   28/01/04      CAA       USE PRICE AGREEMENTS THAT ARE APPROVED OR Print STATUS ONLY - REMEDY 000452195 (same as REMEDY 000450935)
+!   28/01/2004    CAA           USE PRICE AGREEMENTS THAT ARE APPROVED OR Print STATUS ONLY - REMEDY 000452195 (same as REMEDY 000450935)
 !
-!   18/02/04      CAA       Remedy 000454667 - calculate tax fro line) and REMEDY 000452195
-!                           (get latest price agreement number as INVENTORY.il1 is not always updated)
-!   26/02/04      JM        Make sure that the exchangerate is always set to 1 for GBP PRs
-!   24/03/04      CAA       Add prompt and search for ROI, ROR or Both, Remedy Call 000459289
-!   24/03/04      CAA       Add column in4 (respnsile person) Remedy - 000460302 (Printed where PANUM used to be printed)
-!   17/05/04      JM        Stock Type of WASTE has been added to Maximo as part of WS157. These items are similar
-!                           to REDSTK in that they should not be reordered but they can be issued until the existing stock
-!                           has been used.
-!   30/07/04      CAA       Remedy Call 000476963 (added in19 column to report)
-!   23/11/04      RC        Changed to use IN15 instead of IN12 field.
-!   24/11/04      RC        Now takes into account Conversion factors.
-!   02/12/04      RC        Fixed a number of bugs.
-!   10/12/04      RC        Change line 1291 Change to stop multiple printing.
-!   27/01/05      RC        Added ability to look at more than one storeroom
-!   03/10/05      A Newman  Remedy 43719 - Change Max to Min for required delivery dates
-!   01/09/06      N Rhodes  Remedy 80005 - Added tax amount to loaded cost on POLINE to fix header cost
-!   16/09/07      R Nunn    Remedy 152666 - Add Item Criticality column C'to report and remove 'CB' from report
-!   19/09/07      R Nunn    Remedy 176424 - Add Payment Terms into PO Header
-!   13/12/07      R Nunn    Remedy 162630 - Correct exchangerate value
-!   29/05/08      R Nunn    Remedy 197597 - Problem with Order Quantity
-!   22/07/08      R Nunn    footPrint 24886- Remove double spacing from report Print out
-!   28/11/08      R Nunn    footPrint 37373 tax code change from 'GM' to 'g4'
-!   15/05/09      R Nunn    footPrint 51980  Remove FAX and Email status. Keep PO to 'WAPPR', 'MINVAL' status only
-!   02/11/09      R Nunn    footPrint 69505  To allow automation of report to run where Item/in15 = 'N' old report name = REORDGEC
-!   15/12/09      R Nunn    footPrint 76810 tax code change from 'G4' to 'GM'
-!   03/02/2010    A Newman  footPrint 82410 - POLines pick up incorrect Price Agreement for item
-!   30/11/10      G Stephen Project Wales - VAT Changes to 'AZ'
-!   14/12/10      G Stephen Project Wales - Add new purchase groups
+!   18/02/2004    CAA           Remedy 000454667 - calculate tax fro line) and REMEDY 000452195
+!                               (get latest price agreement number as INVENTORY.il1 is not always updated)
+!   26/02/2004    JM            Make sure that the exchangerate is always set to 1 for GBP PRs
+!   24/03/2004    CAA           Add prompt and search for ROI, ROR or Both, Remedy Call 000459289
+!   24/03/2004    CAA           Add column in4 (respnsile person) Remedy - 000460302 (Printed where PANUM used to be printed)
+!   17/05/2004    JM            Stock Type of WASTE has been added to Maximo as part of WS157. These items are similar
+!                               to REDSTK in that they should not be reordered but they can be issued until the existing stock
+!                               has been used.
+!   30/07/2004    CAA           Remedy Call 000476963 (added in19 column to report)
+!   23/11/2004    RC            Changed to use IN15 instead of IN12 field.
+!   24/11/2004    RC            Now takes into account Conversion factors.
+!   02/12/2004    RC            Fixed a number of bugs.
+!   10/12/2004    RC            Change line 1291 Change to stop multiple printing.
+!   27/01/2005    RC            Added ability to look at more than one storeroom
+!   03/10/2005    A Newman      Remedy 43719 - Change Max to Min for required delivery dates
+!   01/09/2006    N Rhodes      Remedy 80005 - Added tax amount to loaded cost on POLINE to fix header cost
+!   16/09/2007    R Nunn        Remedy 152666 - Add Item Criticality column C'to report and remove 'CB' from report
+!   19/09/2007    R Nunn        Remedy 176424 - Add Payment Terms into PO Header
+!   13/12/2007    R Nunn        Remedy 162630 - Correct exchangerate value
+!   29/05/2008    R Nunn        Remedy 197597 - Problem with Order Quantity
+!   22/07/2008    R Nunn        footPrint 24886- Remove double spacing from report Print out
+!   28/11/2008    R Nunn        footPrint 37373 tax code change from 'GM' to 'g4'
+!   15/05/2009    R Nunn        footPrint 51980  Remove FAX and Email status. Keep PO to 'WAPPR', 'MINVAL' status only
+!   02/11/2009    R Nunn        footPrint 69505  To allow automation of report to run where Item/in15 = 'N' old report name = REORDGEC
+!   15/12/2009    R Nunn        footPrint 76810 tax code change from 'G4' to 'GM'
+!   03/02/2010    A Newman      footPrint 82410 - POLines pick up incorrect Price Agreement for item
+!   30/11/2010    G Stephen     Project Wales - VAT Changes to 'AZ'
+!   14/12/2010    G Stephen     Project Wales - Add new purchase groups
+!   18/04/2021    G Bishop      Beautified code for documentation - note: these will not compile
 !----------------------------------------------------------------
 
 !------------------------------------------------------------
@@ -329,7 +330,7 @@ Begin-Procedure Reorder
     Begin-Sql on-error=SQL_Error
         Delete from Reorder;
     End-Sql
-    
+
 
 End-Procedure
 
@@ -410,57 +411,50 @@ Begin-Procedure Main
     Let $ldfield='DESCRIPTION'
 
     Begin-Select
-                INVENTORY.ITEMNUM                           &itemnum  / $itemnum
+                INVENTORY.ITEMNUM                           &itemnum
                 INVENTORY.MINLEVEL                          &minlevel
                 INVENTORY.MAXLEVEL                          &maxlevel
-                INVENTORY.LOCATION                          &location / $location / $location_temp
-                nvl(INVENTORY.VENDOR,'ZZZZZZ')              &vendor / $vendor
+                INVENTORY.LOCATION                          &location  / $location_temp
+                nvl(INVENTORY.VENDOR,'ZZZZZZ')              &vendor
                 INVENTORY.ORDERQTY                          &orderqty
-                ITEM.DESCRIPTION                            &itemdesc / $itemdesc
-                ITEM.INSPECTIONREQUIRED                     &inspectionrequired / $inspectionrequired
-                ITEM.LDKEY                                  &itemld / #itemld
-                INVENTORY.MANUFACTURER                      &manufacturer / $manufacturer
-                INVENTORY.MODELNUM                          &modelnum / $modelnum
-                INVENTORY.CATEGORY                          &category / $category
-                INVENTORY.CATALOGCODE                       &catcode / $catcode
-                INVENTORY.ORDERUNIT                         &orderunit / $orderunit - if isnull($orderunit) then $orderunit='EA'
-                INVENTORY.LASTCOST                          &lastcost / #lastcost
-                INVENTORY.CONVERSION                        &conversion / $conversion / #conversion
-                (INVENTORY.ORDERQTY*INVENTORY.LASTCOST)     &total / #total
+                ITEM.DESCRIPTION                            &itemdesc
+                ITEM.INSPECTIONREQUIRED                     &inspectionrequired
+                ITEM.LDKEY                                  &itemld
+                INVENTORY.MANUFACTURER                      &manufacturer
+                INVENTORY.MODELNUM                          &modelnum
+                INVENTORY.CATEGORY                          &category
+                INVENTORY.CATALOGCODE                       &catcode
+                INVENTORY.ORDERUNIT                         &orderunit - if isnull($orderunit) then $orderunit='EA'
+                INVENTORY.LASTCOST                          &lastcost
+                INVENTORY.CONVERSION                        &conversion
+                (INVENTORY.ORDERQTY * INVENTORY.LASTCOST)   &total
                 INVENTORY.LASTISSUEDATE                     &lastissuedate
                 INVENTORY.IL1                               &il1 / $agreementno
                 ITEM.IN5                                    &in5 / $orderapproval
                 ITEM.IN4                                    &in4 / $resperson
                 ITEM.IN3                                    &in3 / $criticality
                 ITEM.IN19                                   &in19 / $in19
-                INVENTORY.DELIVERYTIME                      &deliverytime / #deliverytime
+                INVENTORY.DELIVERYTIME                      &deliverytime
 
-            Do GLAcc_Get - resolves to the below
-
-            Move &lastcost to
-            Move &total to
-            Move &minlevel to #minlevel
-            Move &maxlevel to #maxlevel
-
-            Let #woqty=0
+            let #woqty=0
+            Do GLAcc_Get
             Do WO_Check  ! find out If there are any items on work orders to be ordered
 
             If #maxlevel > 0 or #woqty>0
-                Do Curbal
+                Do CurBal
             End-If
 
-        From    INVENTORY INVENTORY,
-                ITEM ITEM
+        From    INVENTORY,
+                ITEM
         where   INVENTORY.ITEMNUM = ITEM.ITEMNUM
         and     INVENTORY.CATEGORY = 'STK'
         and     ITEM.OUTSIDE<>'Y'
-        and   ((ITEM.STOCKTYPE not IN ('REDSTK', 'WASTE')
-            or  ITEM.STOCKTYPE is null)
+        and (  (ITEM.STOCKTYPE not in ('REDSTK', 'WASTE') or ITEM.STOCKTYPE is null)
         and (   ITEM.IN22 is null or trunc(SYSDATE) > trunc(ITEM.IN22)))
         and (   ITEM.IN15 = 'N')
         and (   INVENTORY.LOCATION = $Storeroom1
-            or  INVENTORY.LOCATION = $storeroom2
-            or  INVENTORY.LOCATION = $Storeroom3)
+        or      INVENTORY.LOCATION = $storeroom2
+        or      INVENTORY.LOCATION = $Storeroom3)
         [$ROIROR]
 
         order by
@@ -558,7 +552,7 @@ Begin-Procedure UpdateTax1Value
     Begin-Sql
         update  PO set TOTALTAX1 = #sumTax1 where PONUM = $ponumins
     End-Sql
-    
+
 End-Procedure
 
 !------------------------------------------------------------
@@ -615,11 +609,11 @@ Begin-Procedure PO_Check
     move 0 to #qty
 
     Begin-Select
-                pl.PONUM                            &ponumnis / $ponumnis
-                pl.CONVERSION                       &poconv
-            (   pl.ORDERQTY-pl.RECEIVEDQTY)         &poordr_rec
-                p.STATUS                            &status / $postatus
-                pl.RECEIPTSCOMPLETE                  &receiptscomplete / $receiptscomplete
+                POLINE.PONUM                                ponumnis
+                POLINE.CONVERSION                           poconv
+            (   POLINE.ORDERQTY - POLINE.RECEIVEDQTY)       poordr_rec
+                PO.STATUS                                   &status / $postatus
+                POLINE.RECEIPTSCOMPLETE                     receiptscomplete
 
             move 1 to #poexists
             move 0 to #poqty
@@ -630,17 +624,17 @@ Begin-Procedure PO_Check
             Let #poqty = #poconv * #poordr_rec
             add #poqty to #qty
 
-        From    POLINE pl,
-                PO p
-        where   p.PONUM = pl.PONUM
-        and     pl.ITEMNUM = $itemnum
-        and     p.POTYPE <> 'PRICE'
-        and    (P.STATUS in (   select  VALUE
+        From    POLINE,
+                PO
+        where   PO.PONUM = POLINE.PONUM
+        and     POLINE.ITEMNUM = $itemnum
+        and     PO.POTYPE <> 'PRICE'
+        and    (PO.STATUS in (  select  VALUE
                                 from    VALUELIST
                                 where   LISTNAME = 'POSTATUS'
                                 and     MAXVALUE in ('WAPPR','APPR','PRINT','FAX','EMAIL'))
-                p.STATUS = 'MINVAL')
-        and     pl.RECEIVEDQTY < pl.ORDERQTY
+        or      PO.STATUS = 'MINVAL')
+        and     POLINE.RECEIVEDQTY < POLINE.ORDERQTY
     End-Select
 
     Let #poqty=#qty
@@ -689,7 +683,7 @@ Begin-Procedure Price_Check
         where   PO.PONUM = POLINE.PONUM
         and     POTYPE='PRICE'                                      ! *** CAA - USE PRICE AGREEMENTS THAT ARE APPROVED OR Print STATUS ONLY ***
         and     POLINE.ITEMNUM = $itemnum
-        and     PO.VENDOR = $vendor                
+        and     PO.VENDOR = $vendor
         and     PO.STATUS in (  select  VALUE
                                 from    VALUELIST
                                 where   LISTNAME = 'POSTATUS'
@@ -852,7 +846,7 @@ Begin-Procedure Update_MinVal_Line
                     LOADEDCOST  = #new_loadedcost
             where   PONUM       = $ponumins
             and     POLINENUM   = #linenumx
-        End-Sql       
+        End-Sql
         Let $insertNewLine = 'N'
     Else
         Let $insertNewLine = 'Y'
@@ -864,7 +858,7 @@ Begin-Procedure Update_MinVal_Line
         update PO set TOTALCOST = #POtotalcost where PONUM = $ponumins;
         update PO set CHANGEDATE = SYSDATE where PONUM = $ponumins;
     End-Sql
-    
+
     Do PrintPO
     Let $printedalready = 'Y'
 
@@ -1011,7 +1005,7 @@ Begin-Procedure Build_POLine
         From    POLINE
     End-Select
 
-    Begin-Select        
+    Begin-Select
                 LDTEXT                  &ldtext     !Get the Long text for the Item
         From    LONGDESCRIPTION
         where   LDKEY = #itemld
@@ -1116,7 +1110,7 @@ Begin-Procedure Build_POLine
                             POQTY,MRNUM,MRLINENUM,SERVICE,SCHARGECODE,
                             IN24,IN25,IN26,IN27,REORDERQTY,
                             AGREEMENTPONUM,AGREEMENTPOTYPE,PAYONRECEIPT,CURRENCYCODE)
-                Values    ($itemnum,$location,$vendor,#minlevel,
+        Values              ($itemnum,$location,$vendor,#minlevel,
                             #maxlevel,'cat',NULL,#orderqty_converted,$orderunit,
                             #lastcost,$conversion,NULL,NULL,NULL,
                             NULL,$ponum,#fcurbal,NULL,SYSDATE+7,
@@ -1127,7 +1121,7 @@ Begin-Procedure Build_POLine
                             NULL,NULL,NULL,NULL,NULL,
                             $panum,$agreementpoType,NULL,NULL);
     End-Sql
-    
+
     If $printedalready='Y'
         Let $printedalready='N'
     Else
@@ -1372,7 +1366,7 @@ Begin-Procedure AddStatus
                 WHEN  = 'FAX'
                     Do CanFax($lastvendor,$CanFax)
                     If $CanFax = 'Y'
-                        Do UpdatePOStatus($lastponumins,'FAX')  !REORDFAY = Do UpdatePOStatus($lastponumins,'WAPPR')                        
+                        Do UpdatePOStatus($lastponumins,'FAX')  !REORDFAY = Do UpdatePOStatus($lastponumins,'WAPPR')
                         Break
                     Else
                         Print {NoFax} (+1,5)
@@ -1446,13 +1440,13 @@ Begin-Procedure UpdatePOStatus( $ponum, $status )
     Let $changeby = ''''|| $_username ||''''
 
     Begin-Sql on-error=SQL_Error
-        update  PO set STATUS       = [$addstatus]  where PONUM = [$ponum];
-        update  PO set STATUSDATE   = SYSDATE       where PONUM = [$ponum];
+        update  PO set  STATUS       = [$addstatus],
+                        STATUSDATE   = SYSDATE
+        where   PONUM = [$ponum];
     End-Sql
 
     Begin-Sql on-error=SQL_Error
-        insert into POSTATUS (
-                                PONUM,
+        insert into POSTATUS (  PONUM,
                                 STATUS,
                                 CHANGEBY,
                                 CHANGEDATE,
@@ -1469,7 +1463,7 @@ Begin-Procedure UpdatePOStatus( $ponum, $status )
             update  PO
             set     ORDERDATE = SYSDATE
             where   PONUM = [$ponum];
-        End-Sql        
+        End-Sql
     End-If
 
     Do EndLines ($ponum,$status)
@@ -1523,7 +1517,7 @@ Begin-Procedure GetDllFlagsValues
     End-Select
 
     If (#nullstatus = 1) or (&DefaultStatus = '')
-        
+
         Let $DefaultStatus = 'WAPPR'               !REORDFAY = Let $DefaultStatus = 'APPR'                51980
     End-If
 
