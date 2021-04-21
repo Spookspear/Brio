@@ -499,7 +499,7 @@ Begin-Procedure CurBal
 
                 If (#qty - #woqty) <= #min and #orderqty_CONVERTED >0               ! Current balance - reserved + quantities on PR's and PO's still below minimum level or items from work orders to be ordered, Quantity to be ordered has to be greater than 0
 
-                    If $vendor!='ZZZZZZ'                                            ! Vendor is not null
+                    If $vendor != 'ZZZZZZ'                                            ! Vendor is not null
                         If #nullagreement <> 1                                      ! i.e. not null
                             Do Price_Check                                          ! Find out If there is a price agreement for the item for this vendor
                         End-If
