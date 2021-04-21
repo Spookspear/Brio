@@ -4,897 +4,779 @@
 ! Filename: C:\SQR\consign.sqr
 ! Format  : Tabular
 ! Username: MAXIMO
-!
-!   DATE        INITS       ACTION
-!   19/06/2002  BH          Added a second section or the report to print items not on a current price agrement
-!                           Check to make sure that there is a current price agreement for item/vendor
-!   11/09/2002  BH          Do not update the prompt in the REPORT table
-!   14/10/2002  BH          Material group set to 28000 and tax1code set to value from vendor record on COMPANIES
-!   04/12/2002  CA          Inclusion of Work Order Number.
-!   20/03/2003  JR          Remove Inventory & Item Updates as per request J Turley
-!                           ( Note - very suspicious of the 'to be completed' section matrectrans) 
-!   13/10/2004  GVB         Transactions now take into account results for INVTRANS table as per remedy: 000482266
-!   21/01/2003  CA          Remedy Call 000451339, startdate, enddate and transdate to take account of hours. 
-!                           (new report for Grangemouth as store is run 24 hours, where Hull is not).
-!   15/05/2006  GJS         Remedy 81155: Modification to the following conditions:
-!                                   Report will use minutes and seconds in the time
-!                                   If user enters no date report will run to current date and time
-!                                   If user enters date of today then it will run to the sysdate
-!                                   If user enters date of < today then it will run to midnight of that day 
-!                                   Update report so PO long description is always 50 characters max
-!                                   Restoring Report to the replace missing updates from the latest source (Balance Adjustments)
-!   09/10/2007  GJS         Remedy 175490: Allow reportruns entry to be made regardless if its negative value
-!   11/06/2008  GJS         Ticket: 16105: Updated report to create PDF file
-!   28/11/08    RJN         Footprint 37373 change tax code from 'GM' to 'G4'
-!   30/11/10    G Stephen 	Project Wales - VAT Changes to 'AZ'
-!   14/12/10    G Stephen 	Project Wales - Add new purchase groups
-!   30/09/2015  MDM 	    Updated folder path from bp1grais003 to in1grafap002 as per issues with old alias no longer following file share move
+
+
+!  MODIFICATION   HISTORY
+!  DATE           INITIALS      NOTES
+!   19/06/2002    BH            Added a second section or the report to Print items not on a current price agrement
+!                               Check to make sure that there is a current price agreement for item/vEndor
+!   11/09/2002    BH            Do not Update the prompt in the REPORT table
+!   14/10/2002    BH            Material group set to 28000 and tax1code set to value from vEndor record on COMPANIES
+!   04/12/2002    CA            Inclusion of Work Order Number.
+!   20/03/2003    JR            ReMove Inventory & Item Updates as per request J Turley
+!                               ( Note - very suspicious of the 'to be completed' section matrectrans)
+!   13/10/2004    GVB           Transactions now take into account results for INVTRANS table as per remedy: 000482266
+!   21/01/2003    CA            Remedy Call 000451339, startdate, Enddate and transdate to take account of hours.
+!                               (new report for Grangemouth as store is run 24 hours, where Hull is not).
+!   15/05/2006    GJS           Remedy 81155: Modification to the following conditions:
+!                               Report will use minutes and seconds in the time
+!                               If user enters no date report will run to current date and time
+!                               If user enters date of today then it will run to the sysdate
+!                               If user enters date of < today then it will run to midnight of that day
+!                               Update report so PO long description is always 50 characters max
+!                               Restoring Report to the replace missing Updates from the latest source (Balance Adjustments)
+!   09/10/2007    GJS           Remedy 175490: Allow reportruns entry to be made regardless If its negative value
+!   11/06/2008    GJS           Ticket: 16105: Updated report to create PDF file
+!   28/11/08      RJN           FootPrint 37373 change tax code from 'GM' to 'G4'
+!   30/11/10      G Stephen     Project Wales - VAT Changes to 'AZ'
+!   14/12/10      G Stephen     Project Wales - Add new purchase groups
+!   30/09/2015    MDM           Updated folder path from bp1grais003 to in1grafap002 as per issues with old alias no longer following file share Move
+!   18/04/2021    G Bishop      Beautified code for documentation - note: these will not compile
 !--------------------------------------------------------------------------------
 ! Compile with these switches -rs -msqrmax.sqm
 !--------------------------------------------------------------------------------
-
-#define RepName         'CONSIGN.SQT'
-#define POStatus        'PRINT'
-
-#define Notusedprompt   'Parameter not used.  Press enter to continue'
-#define Schemaprompt    'Insert schema name'
-#define Whereprompt     'Insert where clause'
-
+#define RepName 'CONSIGN.SQT'
+#define POStatus 'Print'
+#define Notusedprompt 'Parameter not used. Press enter to continue'
+#define Schemaprompt 'Insert schema name'
+#define whereprompt 'Insert where clause'
 #define p1type 'DATE'
 #define p2type 'CHAR'
 #define p3type 'N/A'
 #define p4type 'N/A'
-
-!#define FILEPATH        '\\bp1grais003\PUBLIC\Maximo\Consignment Reports\'          !16105 The location of where to store the file
-#define FILEPATH        '\\in1grafap002\PUBLIC\Maximo\Consignment Reports\'          !16105 The location of where to store the file
-
+#define FILEPATH '\\in1grafap002\PUBLIC\Maximo\Consignment Reports\'
 #define p1prompt 'Enter Storeroom'
-!*** CAA - REMEDY CALL 000451339 ***
-!#define p2prompt 'Enter Last Date for transaction (DD-MON-YYYY):'                  ! 81155 - removed
-#define p2prompt maxlen=11 'Enter Last Date for transaction (DD-MON-YYYY):'         ! 81155 - added
-!#define p2prompt 'Enter Last Date for transaction'
+#define p2prompt maxlen = 11 'Enter Last Date for transaction (DD-MON-YYYY):'
 #define p3prompt 'Preview Y/N'
 #define p4prompt 'Enter purchase group'
-
 #include 'input.h'
 
-
 Begin-Setup
-    declare-variable
+    Declare-Variable
         date $MyDateRange
         date $InvTransDate
-    end-declare
+    End-Declare
 
-   Declare-Layout Default
-      Orientation = Landscape
-      Paper-Size = (A4)
-      Top-Margin    = 0.500
-      Bottom-Margin = 0.500
-      Left-Margin   = 0.500
-      Right-Margin  = 0.500
-      Line-Height = 1
-      Char-Width  = 1
-   End-Declare
+    Declare-Layout Default
+        Orientation = Landscape
+        Paper-Size = (A4)
+        Top-Margin = 0.500
+        Bottom-Margin = 0.500
+        Left-Margin = 0.500
+        Right-Margin = 0.500
+        Line-Height = 1
+        Char-Width = 1
+    End-Declare
+
 End-Setup
 
 Begin-Program
 
-    Do Get-Input   
-   let $userok='Y'
-   If UPPER($USERNAME) <> 'MAXIMO' AND UPPER($USERNAME)<> 'SYSADM'
-      let $report_name='CONSIGN'
-      do user_check
-   end-if
+    Do Get-Input
+    let $userok = 'Y'
 
-   if $userok='N'
-      let $print = $username||' cannot run this report'
-      print $print        (+5,10)         
-      stop quiet
-   end-if 
+    If Upper($USERNAME) <> 'MAXIMO' and Upper($USERNAME)<> 'SYSADM'
+        let $report_name = 'CONSIGN'
+        Do user_check
+    End-If
 
- do get_hours_and_minutes                 
+    If $userok = 'N'
+        let $Print = $username||' cannot run this report'
+        Print $Print (+5,10)
+        Stop quiet
+    End-If
 
- ! Loops until user types a length of 11 characters which would be dd-mon-yyyy
- While 1=1                                                                                  ! 81155 - added                                                                               
-   IF length(upper($p2)) = 11                                                               
-      BREAK                                                                                 
-   END-IF
-   Input $p2 maxlen=11 'Please enter a valid date (DD MON YYYY)'
- END-WHILE
+    Do Get_Hours_And_Minutes
 
- Let $Storeroom = upper($p1)
- Let $Enddate = upper($p2)                                                                                                  
- UNSTRING $Enddate by '-' INTO $DD $MON $YYYY
- Let $Enddate = $YYYY||'-'||$MON||'-'||$DD
- Let $Enddateforpoline = $Enddate||$sysdatetime
- Let $Enddate = $Enddate||$sysdatetime
+    While 1=1
+        If Length(Upper($p2)) = 11
+            Break
+        End-If
 
- IF strtodate(UPPER($p2), 'DD-MON-YYYY') < strtodate(datetostr(datenow()), 'DD-MON-YYYY')   ! 81155 - added
-   Let $Enddate = strtodate(UPPER($p2), 'DD-MON-YYYY')
-   UNSTRING $Enddate by '-' INTO $DD $MON $YYYY
-   Let $Enddate = $YYYY||'-'||$MON||'-'||$DD || ' 23:59:59'
- ELSE
-    IF strtodate(UPPER($p2), 'DD-MON-YYYY') > strtodate(datetostr(datenow()), 'DD-MON-YYYY') 
-      Let $Enddate = datenow()
-      UNSTRING $Enddate by '-' INTO $DD $MON $YYYY
-      Let $Enddate = $YYYY||'-'||$MON||'-'||$DD
-      Let $Enddate = $Enddate||$sysdatetime
-    END-IF
- END-IF
+        Input $p2 maxlen = 11 'Please enter a valid date (DD MON YYYY)'
 
- Let $Preview = upper($p3)
+    End-While
 
-While 1=1
+    Let $Storeroom = Upper($p1)
+    Let $Enddate   = Upper($p2)
+    Unstring $Enddate by '-' INTO $DD $MON $YYYY
 
-   Uppercase $p4
+    Let $Enddate = $YYYY||'-'||$MON||'-'||$DD
+    Let $Enddateforpoline = $Enddate||$sysdatetime
+    Let $Enddate = $Enddate||$sysdatetime
 
-   let $purchasegroup=$p4
-   
-  !Project Wales
-!  if $purchasegroup='299' or $purchasegroup='331'
-!    let $billto='BBBPBILL'
-!    LET $shipto='BBBPSHIP'
-!    BREAK
-!  END-IF
-!  if $purchasegroup='302' or $purchasegroup='334' 
-!    let $billto='HUBPBILL'
- !   LET $shipto='HUBPSHIP'
- !   BREAK
- ! END-IF 
-  if $purchasegroup>='347' AND $purchasegroup<='352' 
-    let $billto='GMBPCBILL'
-    LET $shipto='GMBPCSHIP'
-    BREAK
-  END-IF 
-  if $purchasegroup='131' OR $purchasegroup='132' 
-    let $billto='GMICBILL'
-    LET $shipto='GMICSHIP'
-    BREAK
-  END-IF 
- if $purchasegroup='141' OR $purchasegroup='142' 
-    let $billto='GMIIBILL'
-    LET $shipto='GMIISHIP'
-    BREAK
- END-IF 
-    Input $p4  'Enter a valid purchasegroup'
-    Uppercase $p4
-	
-	
+    If StrToDate(Upper($p2), 'DD-MON-YYYY') < StrToDate(DateToStr(DateNow()), 'DD-MON-YYYY')
+        Let $Enddate = StrToDate(Upper($p2), 'DD-MON-YYYY')
+        Unstring $Enddate by '-' INTO $DD $MON $YYYY
+        Let $Enddate = $YYYY||'-'||$MON||'-'||$DD || ' 23:59:59'
+    Else
+        If StrToDate(Upper($p2), 'DD-MON-YYYY') > StrToDate(DateToStr(DateNow()), 'DD-MON-YYYY')
+            Let $Enddate = DateNow()
+            Unstring $Enddate by '-' INTO $DD $MON $YYYY
+            Let $Enddate = $YYYY||'-'||$MON||'-'||$DD
+            Let $Enddate = $Enddate||$sysdatetime
+        End-If
+    End-If
 
-END-WHILE
+    Let $Preview = Upper($p3)
+    
+    While 1=1
+        UpperCase $p4
 
-   Alter-Printer Font=4 Point-Size=10    ! [SQR.INI] 4=Arial,proportional
-!    print #p1_status (+1,1)
+        let $purchasegroup = $p4
+
+        If $purchasegroup >= '347' and $purchasegroup <= '352'
+            let $billto = 'GMBPCBILL'
+            Let $shipto = 'GMBPCSHIP'
+            Break
+        End-If
+
+        If $purchasegroup = '131' OR $purchasegroup = '132'
+            let $billto = 'GMICBILL'
+            Let $shipto = 'GMICSHIP'
+            Break
+        End-If
+
+        If $purchasegroup = '141' OR $purchasegroup = '142'
+            let $billto = 'GMIIBILL'
+            Let $shipto = 'GMIISHIP'
+            Break
+        End-If
+
+        Input $p4 'Enter a valid purchasegroup'
+        UpperCase $p4
+
+    End-While
+
+    Alter-Printer Font=4 Point-Size=10
 
     Position (1,1)
 
-    do openPDFFile                                                !16105
-    
+    Do OpenPDFFile
     Do ReportInformation
+    Do Master_Query
+    Do Master_Query_Subtotal
+    Do BalanceAdjustments
 
-    do Master_Query
-    do Master_Query_Subtotal                                        !81155 - added
+    If $Preview = 'N'
+        Do Preview
+    End-If
 
-    do BalanceAdjustments                                           !81155 - added
+End-Program
 
-    if $Preview = 'N'                                               !81155 - added 
-       Do PreView
-    end-if
+!--------------------------------------------------------
+! Get_Hours_And_Minutes
+!--------------------------------------------------------
+Begin-Procedure Get_Hours_And_Minutes
+    Begin-Select
+                To_Char(SYSDATE,' HH24:MI:SS') &sysdatetime
+        Move &sysdatetime TO $sysdatetime
+        from DUAL
+    End-Select
+End-Procedure
 
-   ! new bit as per remedy: 000482266 Grant Bishop                  !81155 - removed
-   !do GetInvTransAdjustments
-
-end-program
-
-begin-procedure get_hours_and_minutes                               !81155 - added
-begin-select
-TO_CHAR(SYSDATE,' HH24:MI:SS')	&sysdatetime
- 
- 	MOVE &sysdatetime TO $sysdatetime
- 
- from dual
-end-select
-end-procedure
-!--------------------------------------------------------------
-
+!--------------------------------------------------------
+! Master_Query
+!--------------------------------------------------------
 Begin-Procedure Master_Query
+    Print-Direct Printer=html '%%ResetColor'
+    Print-Direct Printer=html '%%ResetBorder'
+    let #total = 0
 
-Print-Direct printer=html '%%ResetColor'
-Print-Direct printer=html '%%ResetBorder'
+    Alter-Printer Font=4 Point-Size=8
 
-let #total = 0
+    Begin-Select
+        MATUSETRANS.STORELOC                &Master_Query_MATUSETRANS.STORELOC
+        MATUSETRANS.ITEMNUM                 &Master_Query_MATUSETRANS.ITEMNUM / $itemnum
+        TRANSDATE                           &Master_Query_TRANSDATE / $MyDateRange
+        (0-QUANTITY)                        &Master_Query_QUantity  / #quantity
+        ITEM.DESCRIPTION                    &Master_Query_ITEM.DESCRIPTION
+        INVENTORY.MODELNUM                  &Master_Query_INVENTORY.MODELNUM
+        INVENTORY.IL1                       &Master_Query_CONTRACT
+        INVENTORY.ISSUEUNIT                 &Master_Query_ISSUEUNIT
+        INVENTORY.VENDOR                    &Master_query_vEndor    /   $Vendor
+        MATUSETRANS.WONUM                   &Master_Query_MATUSETRANS.WONUM
 
-Alter-Printer Font=4 Point-Size=8    ! [SQR.INI] 4=Arial,proportional
+        let $PriceFlag = 'N'
 
-Begin-Select
-MATUSETRANS.STORELOC                           &Master_Query_MATUSETRANS.STORELOC
-!POLINE.ORDERUNIT                               &Master_Query_POLINE.ORDERUNIT
-MATUSETRANS.ITEMNUM                            &Master_Query_MATUSETRANS.ITEMNUM
-TRANSDATE                                      &Master_Query_TRANSDATE
-(0-QUANTITY)                                   &Master_Query_QUantity
-ITEM.DESCRIPTION                               &Master_Query_ITEM.DESCRIPTION
-INVENTORY.MODELNUM                             &Master_Query_INVENTORY.MODELNUM
-INVENTORY.IL1                                  &Master_Query_CONTRACT
-INVENTORY.ISSUEUNIT                            &Master_Query_ISSUEUNIT
-INVENTORY.VENDOR                               &master_query_vendor
-MATUSETRANS.WONUM                              &Master_Query_MATUSETRANS.WONUM 
-  
-   move &Master_Query_QUantity to #quantity
- 
-   let $vendor = &master_query_vendor
-   let $itemnum=&master_query_matusetrans.itemnum
-   let $priceflag='N'
- 
-   do price_check
+        Do Price_Check
 
-   if $priceflag = 'Y'
+        If $PriceFlag = 'Y'
+            Print           &Master_Query_MATUSETRANS.STORELOC () On-Break Set=17 Level=1 Print=Never Before=Master_QuerySTORELOC_BeforeProc1701
+            Print           &Master_Query_MATUSETRANS.ITEMNUM (12,1)
+            Print           &Master_Query_TRANSDATE (12,320) Edit DD-MON-YYYY
+            Print           &Master_Query_QUANTITY (12,375) Edit 99999999na
+            Print           &Master_Query_ITEM.DESCRIPTION (12,67,55)
+            Print           &Master_Query_INVENTORY.MODELNUM (12,638,20)
+            Print           &Master_Query_MATUSETRANS.WONUM (,440,14)
+            Print           &Master_Query_ISSUEUNIT (12,525,8)
 
-      print  &Master_Query_MATUSETRANS.STORELOC () On-Break Set=17 Level=1 Print=Never Before=Master_QuerySTORELOC_BeforeProc1701 !After=Master_QuerySTORELOC_AfterProc1701     !81155 - removed after=
-      print  &Master_Query_MATUSETRANS.ITEMNUM (12,1)
-      print  &Master_Query_TRANSDATE (12,320) Edit DD-MON-YYYY
-      print  &Master_Query_QUANTITY (12,375) Edit 99999999na
-      print  &Master_Query_ITEM.DESCRIPTION (12,67,55)
-      print  &Master_Query_INVENTORY.MODELNUM (12,638,20)
-      print  &Master_Query_MATUSETRANS.WONUM (,440,14)
-      print  &Master_Query_ISSUEUNIT (12,525,8)
-    
-      let #VALUE = (#QUANTITY * #LASTCOST) / (#CONVERSION)
+            let #VALUE = (#QUANTITY * #LASTCOST) / (#CONVERSION)
 
-      print   #value  (12,551) Edit 99999999.99
+            Print #value (12,551) Edit 99999999.99
 
-      LET $MyDateRange = &Master_Query_TRANSDATE
+            let #total = #total + #value
 
-      !do GetInvTransAdjustments
-      
-      ! add the subtract amount to the running total 1gvb1
-      !if $InvTransType <> ''
-      !   let #VALUE =  #VALUE + #InvtransNewCost
-      !end-if
+            If #total > 0 and $Preview = 'N' and isblank($PONum)
+                Do Get_PO
+            End-If
 
-      let #total = #total + #value
+            Do ContractNumber
 
-      if #total > 0 and $Preview = 'N'  and isblank($PONum)
-         do Get_PO !change this 1gvb1
-      end-if
+            Next-Listing Need=12
 
-!      Print-Direct printer=html '%%ResetColor'
-      
-      Do ContractNumber
+        End-If
 
-      Next-Listing  Need=12
-      
-   end-if
+        from        MATUSETRANS,
+                    ITEM,
+                    INVENTORY
+        where       MATUSETRANS.ITEMNUM = ITEM.ITEMNUM
+        and         MATUSETRANS.ITEMNUM = INVENTORY.ITEMNUM
+        and         MATUSETRANS.STORELOC = $StoreRoom
+        and         MATUSETRANS.STORELOC = INVENTORY.LOCATION
+        and         ITEM.OUTSIDE = 'Y'
+        and         TRANSDATE >= TO_DATE($STARTDATE,'YYYY-MON-DD HH24:MI:SS')
+        and         TRANSDATE <= TO_DATE($EndDATE,'YYYY-MON-DD HH24:MI:SS')
+        Order By    MATUSETRANS.STORELOC,
+                    MATUSETRANS.ITEMNUM
+    End-Select
 
-From  [$SCHEMA]MATUSETRANS, 
-      [$SCHEMA]ITEM,
-      [$SCHEMA]INVENTORY
-      Where MATUSETRANS.ITEMNUM = ITEM.ITEMNUM
-        And MATUSETRANS.ITEMNUM = INVENTORY.ITEMNUM
-        And MATUSETRANS.STORELOC = $StoreRoom
-        And MATUSETRANS.STORELOC = INVENTORY.LOCATION
-        And ITEM.OUTSIDE = 'Y'
-!*** CAA - REMEDY CALL 000451339 ***
-!        And (trunc(TRANSDATE) BETWEEN $STARTDATE AND $enddate )
-         !And TRANSDATE BETWEEN TO_DATE($STARTDATE,'YYYY-MON-DD HH24:MI:SS') AND TO_DATE($ENDDATE,'YYYY-MON-DD HH24:MI:SS')     !81155 - removed
-         And TRANSDATE >= TO_DATE($STARTDATE,'YYYY-MON-DD HH24:MI:SS')                                                          !81155 - added
-         And TRANSDATE <= TO_DATE($ENDDATE,'YYYY-MON-DD HH24:MI:SS')                                                            !81155 - added
-     Order By MATUSETRANS.STORELOC,
-              MATUSETRANS.ITEMNUM
-End-Select
-!   Next-Listing
-!   Print-Direct printer=html '%%ResetColor'
-!   Print-Direct printer=html '%%ResetBorder'
-   
-   !if $Preview = 'N'                                       !81155 - removed 
-   !   Do PreView
-   !end-if
+    Alter-Printer Font=4 Point-Size=8
 
-!   Next-Listing  Need=24
-  
-Alter-Printer Font=4 Point-Size=8    ! [SQR.INI] 4=Arial,proportional
+    Begin-Select
+               MATUSETRANS.STORELOC     &no_storeloc
+               MATUSETRANS.ITEMNUM      &no_ITEMNUM /   &no_itemnum
+               TRANSDATE                &no_tRANSDATE
+               (0-QUANTITY)             &no_QUANTITY
+               ITEM.DESCRIPTION         &no_DESCRIPTION
+               INVENTORY.MODELNUM       &no_MODELNUM
+               INVENTORY.IL1            &no_CONTRACT
+               INVENTORY.VENDOR         &no_Vendor / $Vendor
+               MATUSETRANS.WONUM        &no_wonum
 
-Begin-Select
-MATUSETRANS.STORELOC                           &no_storeloc
-MATUSETRANS.ITEMNUM                            &no_ITEMNUM
-TRANSDATE                                      &no_tRANSDATE
-(0-QUANTITY)                                   &no_QUANTITY
-ITEM.DESCRIPTION                               &no_DESCRIPTION
-INVENTORY.MODELNUM                             &no_MODELNUM
-INVENTORY.IL1                                  &no_CONTRACT
-INVENTORY.VENDOR                               &no_vendor
-MATUSETRANS.WONUM                              &no_wonum
+        let $PriceFlag = 'N'
 
-   let $vendor = &no_vendor
-   let $itemnum=&no_itemnum
-   let $priceflag='N'
-   
-   do price_check
+        Do Price_Check
 
-   if $priceflag='N'
-      print                                      &no_ITEMNUM (12,1)
-      print                                      &no_tRANSDATE (12,320) Edit DD-MON-YYYY
-      print                                      &no_QUANTITY (12,375) Edit 99999999na
-      print                                      &no_DESCRIPTION (12,67,55)
-      print                                      &no_MODELNUM (12,638,20)
-      print                                      &no_wonum (12,440,14)
-   
-      Next-Listing  Need=12
-   end-if
+        If $PriceFlag = 'N'
+            Print &no_ITEMNUM (12,1)
+            Print &no_tRANSDATE (12,320) Edit DD-MON-YYYY
+            Print &no_QUANTITY (12,375) Edit 99999999na
+            Print &no_DESCRIPTION (12,67,55)
+            Print &no_MODELNUM (12,638,20)
+            Print &no_wonum (12,440,14)
+            Next-Listing Need=12
+        End-If
 
-from  [$SCHEMA]MATUSETRANS, 
-      [$SCHEMA]ITEM,
-      [$SCHEMA]INVENTORY
-      Where MATUSETRANS.ITEMNUM = ITEM.ITEMNUM
-        And MATUSETRANS.ITEMNUM = INVENTORY.ITEMNUM
-        And MATUSETRANS.STORELOC = $StoreRoom
-        And MATUSETRANS.STORELOC = INVENTORY.LOCATION
-        And ITEM.OUTSIDE = 'Y'
-!*** CAA - REMEDY CALL 000451339 ***
-!        And (trunc(TRANSDATE) BETWEEN $STARTDATE AND $enddate )
-        !And TRANSDATE BETWEEN TO_DATE($STARTDATE,'YYYY-MON-DD HH24:MI:SS') AND TO_DATE($ENDDATE,'YYYY-MON-DD HH24:MI:SS')      !81155 - removed
-         And TRANSDATE >= TO_DATE($STARTDATE,'YYYY-MON-DD HH24:MI:SS')                                                          !81155 - added
-         And TRANSDATE <= TO_DATE($ENDDATE,'YYYY-MON-DD HH24:MI:SS')                                                            !81155 - added
-Order By MATUSETRANS.STORELOC, 
-              MATUSETRANS.ITEMNUM
-End-Select
+        from        MATUSETRANS,
+                    ITEM,
+                    INVENTORY
+        where       MATUSETRANS.ITEMNUM = ITEM.ITEMNUM
+        and         MATUSETRANS.ITEMNUM = INVENTORY.ITEMNUM
+        and         MATUSETRANS.STORELOC = $StoreRoom
+        and         MATUSETRANS.STORELOC = INVENTORY.LOCATION
+        and         ITEM.OUTSIDE = 'Y'
+        and         TRANSDATE >= TO_DATE($STARTDATE,'YYYY-MON-DD HH24:MI:SS')
+        and         TRANSDATE <= TO_DATE($EndDATE,'YYYY-MON-DD HH24:MI:SS')
+        Order By    MATUSETRANS.STORELOC,
+                    MATUSETRANS.ITEMNUM
+    End-Select
+End-Procedure
+
+!--------------------------------------------------------
+!
+!--------------------------------------------------------
+Begin-Procedure Preview
+    let $errplace = 'Error in inserting into reportruns'
+    Begin-Sql on-error=sql_error
+        INSERT INTO REPORTRUNS (
+                    REPORTNAME,
+                    RUNDATE,
+                    LASTDATE,
+                    USERNAME,
+                    DATA,
+                    LOCATION,
+                    VENDOR )
+        VALUES (    'CONSIGN.SQT',
+                    sysdate,
+                    TO_DATE($EndDate,'YYYY-MON-DD HH24:MI:SS'),
+                    $username,
+                    $ponum ,
+                    $StoreRoom,
+                    &Vendor );
+    End-Sql
+
+    If #total > 0
+        Do Build_Po
+    End-If
 
 End-Procedure
 
-Begin-Procedure PreView
-   !if  #total > 0              !175490 removed
-      let $errplace='Error in inserting into reportruns'
-Begin-Sql  on-error=sql_error 
- INSERT INTO [$schema]REPORTRUNS ( REPORTNAME, RUNDATE, LASTDATE, USERNAME, DATA, LOCATION, VENDOR ) 
-  VALUES ('CONSIGN.SQT', 
-            sysdate, 
-!*** CAA - REMEDY CALL 000451339 ***    
-!            to_date($enddate,'dd-mon-yyyy'), 
-	    TO_DATE($ENDDATE,'YYYY-MON-DD HH24:MI:SS'),             
-            $username, 
-            $ponum , 
-            $StoreRoom, 
-            &VENDOR );
-End-Sql
-      commit
-      !comment moved to section before update of reportruns
-   if  #total > 0           !175490 enabled
-      Do Build_Po
-   end-if
-
-End-Procedure
-
+!--------------------------------------------------------
+!
+!--------------------------------------------------------
 Begin-Procedure Master_QuerySTORELOC_BeforeProc1701
-   Print-Direct printer=html '%%ResetColor'
-   Print-Direct printer=html '%%ResetBorder'
-  ! Print &Master_Query_MATUSETRANS.STORELOC (13,3,30)
+    Print-Direct Printer=html '%%ResetColor'
+    Print-Direct Printer=html '%%ResetBorder'
 
-Begin-Select
-LOCATIONS.DESCRIPTION &Master_Query_STORENAME
-LOCATIONS.GLACCOUNT &GLAccount
-LOCATIONS.CONTROLACC &GLDebitAccount
- from [$SCHEMA]LOCATIONS
- WHERE LOCATION = &Master_Query_MATUSETRANS.STORELOC
-End-Select
-
+    Begin-Select
+                    LOCATIONS.DESCRIPTION           &Master_Query_STORENAME
+                    LOCATIONS.GLACCOUNT             &GLAccount
+                    LOCATIONS.CONTROLACC            &GLDebitAccount
+        from        LOCATIONS
+        where       LOCATION =                      &Master_Query_MATUSETRANS.STORELOC
+    End-Select
 End-Procedure
 
-Begin-Procedure Master_Query_SubTotal !Master_QuerySTORELOC_AfterProc1701     !81155 - Renamed
-!   Print-Direct printer=html '%%ResetColor'
-!   Print-Direct printer=html '%%ResetBorder'
-!   Print-Direct printer=html '%%ResetColor'
-   ! Next-Listing  Need=12
-   Position (+12,)
-   
-   Alter-Printer Point-Size=10    ! [SQR.INI] 4=MS Shell Dlg,proportional
-   
-    ! places the subtotal of the first half of the report                       !81155 - added  
-   Print #total (24,551) Edit 99999999.99                 
-   Print 'Sub Total'  (24,400) bold                       
-   Position (+12,)                                        
-   Print-Direct printer=html '%%ResetColor'
-   Next-Listing  Need=12
-   Print-Direct printer=html '%%ResetColor'
-   
+!--------------------------------------------------------
+!
+!--------------------------------------------------------
+Begin-Procedure Master_Query_SubTotal
+    Position (+12,)
+    Alter-Printer Point-Size=10
+    Print #total (24,551) Edit 99999999.99
+    Print 'Sub Total' (24,400) bold
+    Position (+12,)
+    Print-Direct Printer=html '%%ResetColor'
+    Next-Listing Need=12
+    Print-Direct Printer=html '%%ResetColor'
 End-Procedure
 
+!--------------------------------------------------------
+!
+!--------------------------------------------------------
 Begin-Procedure ReportInformation
-Begin-SELECT 
-!*** CAA - REMEDY CALL 000451339 (0.00001 -  adding 1 second to the time) ***
-!to_char(NVL(MAX(TRUNC(LASTDATE)),'01-JAN-90')+1,'DD-MON-YYYY')  &startdate
-NVL(TO_CHAR(MAX(LASTDATE)+0.00001,'YYYY-MON-DD HH24:MI:SS'),'1990-JAN-01 00:00:00')    &startdateforpoline 
-NVL(TO_CHAR(MAX(LASTDATE)+0.00001,'YYYY-MON-DD HH24:MI:SS'),'1990-JAN-01 00:00:00')    &startdate
+    Begin-Select
+                Nvl(To_Char(Max(LASTDATE)+0.00001,'YYYY-MON-DD HH24:MI:SS'),'1990-JAN-01 00:00:00') &startdateforpoline
+                Nvl(To_Char(Max(LASTDATE)+0.00001,'YYYY-MON-DD HH24:MI:SS'),'1990-JAN-01 00:00:00') &startdate
+                Let $startdateforpoline = &startdateforpoline
+                Let $startdate = &startdate
+        from    REPORTRUNS
+        where   REPORTNAME = 'CONSIGN.SQT'
+        and     LOCATION = $StoreRoom
+    End-Select
 
-  Let $startdateforpoline = &startdateforpoline
-  Let $startdate = &startdate
+    let $LineDesc = 'Consigned Stock Issues for period '||$startdate||' to '||$Enddate
 
-  FROM [$schema]REPORTRUNS 
-    WHERE REPORTNAME='CONSIGN.SQT'
-    AND   LOCATION =  $StoreRoom
-End-Select
-
-   let $LineDesc = 'Consigned Stock Issues for period '||$startdate||' to '||$enddate       !81155 adjusted so will be under 80 characters
-   
 End-Procedure
 
+!--------------------------------------------------------
+!
+!--------------------------------------------------------
 Begin-Procedure ContractNumber
-!   let $tax1code='G4'       !Footprint 37373 change tax code from 'GM' to 'G4'
-let $tax1code='AZ'       !Project Wales - VAT Changes
-Begin-SELECT 
-PO8 &ContractNumber
-VENDOR   &Vendor
- FROM [$schema]PO
- WHERE PONUM = $panum
-End-Select
+    let $tax1code = 'AZ'
 
-Begin-Select
-to_char(sysdate,'MON-YYYY')  &ordermonth
-C.NAME &VendorName
-  Let $PODesc = substr(&VendorName,1,33)||' CONSIGN '||&ordermonth                  ! 81155 - modified to 33 from 40
-C.CONTACT &CONTACT
-c.currencycode &currencycode
-c.tax1code              &tax1code
-c.CO13                  &freightterms
-c.paymentterms          &paymentterms
+    Begin-Select
+                PO8         &ContractNumber
+                VENDOR      &Vendor
+        from    PO
+        where   PONUM = $panum
+    End-Select
 
-   move &tax1code to $tax1code
-   move &freightterms to $freightterms
-   move &paymentterms to $paymentterms
+    Begin-Select
+                To_Char(sysdate,'MON-YYYY')  &ordermonth
+                C.NAME                       &VendorName
 
- FROM [$schema]PO P , [$schema]COMPANIES C
- WHERE PONUM= $panum
- AND C.COMPANY =P.VENDOR
-End-Select
+        Let $PODesc = SubStr(&VendorName,1,33)||' CONSIGN '||&ordermonth
+        
+                C.CONTACT                    &CONTACT
+                c.CURRENCYCODE               &currencycode
+                c.TAX1CODE                   &tax1code
+                c.CO13                       &freightterms
+                c.PAYMENTTERMS               &paymentterms
+        from    PO P ,
+                COMPANIES C
+        where   PONUM = $panum
+        and     C.COMPANY =P.VENDOR
+    End-Select
 
-Begin-Select
-callid   &ContactPhone
- from [$schema]labor
- where laborcode = $username
-End-Select
-
+    Begin-Select
+               CALLID &ContactPhone
+        from   LABOR
+        where  LABORCODE = $username
+    End-Select
 
 End-Procedure
 
+!--------------------------------------------------------
+!
+!--------------------------------------------------------
 Begin-Heading 75
-   Print-Direct printer=html '%%ResetColor'
-   Print-Direct printer=html '%%ResetBorder'
-   
-   Alter-Printer Point-Size=12    ! [SQR.INI] 4=MS Shell Dlg,proportional
-   
-   Print 'Consigned Stock Issue Report' (10,300) Bold
-   Print &Master_Query_STORENAME (25,350) Bold
-   
-   Alter-Printer Font=4 Point-Size=10    ! [SQR.INI] 4=Arial,proportional
-   
- !*** CAA ***
-   LET $FROMTO = 'From: '||$startdate||' To: '||$enddate
- Print $FROMTO (40,260) bold
- !Print 'From:' (40,260) bold
- !Print $startdate (40,300)
- !Print 'To:' (40,380) bold
- !Print $enddate   (40,400)
-   Print $current-date (12,1) edit 'DD-MON-YYYY'
-   
-   if #total > 0 and $preview='N'
-      Print 'Associated  PO No.' (10,520)   Bold
-      Print $Ponum   (10,640)  
-   end-if
-   
-   if $PreView = 'Y'
-      Print 'Preview no Order Generated' (10,500) Bold
-   end-if
-   
-   Print 'Contract Number'  (40,1) Bold
-   Print &ContractNumber (40,100) 
-   Print 'Supplier Name'  (50,1) Bold
-   Print &VendorName (50,100) 
-   Print 'Item No.' (65,1,8) Bold 
-   Print 'Description' (,67,11) Bold 
-   Print 'Date' (,320,4) Bold 
-   Print 'Qty' (,395,3) Bold 
-   !just added to report - see remedy
-   Print 'Wonum' (,440,14) Bold
-   Print 'Unit' (,525,4) Bold 
-   Print 'Value' (,575,5) Bold !565
-   Print 'Supplier No' (,638,11) Bold 
+    Print-Direct Printer=html '%%ResetColor'
+    Print-Direct Printer=html '%%ResetBorder'
+    Alter-Printer Point-Size=12
+    Print 'Consigned Stock Issue Report' (10,300) Bold
+    Print &Master_Query_STORENAME (25,350) Bold
+    Alter-Printer Font=4 Point-Size=10
+    Let $fromTO = 'from: '||$startdate||' To: '||$Enddate
+    Print $fromTO (40,260) bold
+    Print $current-date (12,1) edit 'DD-MON-YYYY'
 
+    If #total > 0 and $Preview = 'N'
+        Print 'Associated PO No.' (10,520) Bold
+        Print $Ponum (10,640)
+    End-If
 
-   graphic                                        (65,1,700)   horz-line
-   
-   Alter-Printer Font=4 Point-Size=10
-   
+    If $Preview = 'Y'
+        Print 'Preview no Order Generated' (10,500) Bold
+    End-If
+
+    Print 'Contract Number' (40,1) Bold
+    Print &ContractNumber (40,100)
+    Print 'Supplier Name' (50,1) Bold
+    Print &VendorName (50,100)
+    Print 'Item No.' (65,1,8) Bold
+    Print 'Description' (,67,11) Bold
+    Print 'Date' (,320,4) Bold
+    Print 'Qty' (,395,3) Bold
+    Print 'Wonum' (,440,14) Bold
+    Print 'Unit' (,525,4) Bold
+    Print 'Value' (,575,5) Bold
+    Print 'Supplier No' (,638,11) Bold
+    graphic (65,1,700) horz-line
+    Alter-Printer Font=4 Point-Size=10
+
 End-Heading
 
 Begin-Footing 10
-   alter-printer font = 4 point-size=8
-   Print 'Report Name - '         (1,1)      BOLD
-   Print {repname}                (,70)
-   Print 'Page - '                (,600) 
-   Page-Number                    (,640)   
-   Print 'of '                    (,650)  
-   last-page                      (,660)
-   graphic                        (+5,1,700)   horz-line
+    alter-Printer font = 4 point-size=8
+    Print 'Report Name - ' (1,1) BOLD
+    Print {repname} (,70)
+    Print 'Page - ' (,600)
+    Page-Number (,640)
+    Print 'of ' (,650)
+    last-page (,660)
+    graphic (+5,1,700) horz-line
 End-Footing
 
+!--------------------------------------------------------
+!
+!--------------------------------------------------------
 Begin-Procedure Get_Po
-   !Build PO Header record
-Begin-Select
-   !get the next seed for new record
-to_char(seed+1)              &ponumins
-PREFIX                       &PREFIX
-   let #ponumins=&ponumins
-   let $ponumins=&prefix||to_char(#ponumins)
-   let $Ponum = $ponumins
-From [$Schema]Autokey
- Where tbname = 'PO'
-End-Select
+    Begin-Select
+            To_Char(SEED+1) &ponumins
+            PREFIX          &PREFIX
 
-Begin-Select
-!get the next seed for new record
-to_char(seed+1)                  &itemnum
-From [$Schema]Autokey
- Where tbname = 'ITEM'
-End-Select
+            let #ponumins=&ponumins
+            let $ponumins=&prefix||To_Char(#ponumins)
+            let $Ponum = $ponumins
 
-   let $errplace='Error in updating autokey'
-Begin-sql  on-error=sql_error 
-!Update the seed value for the next one
-  Update [$Schema]autokey set seed = seed+1 where tbname = 'PO';
+        from        AUTOKEY
+        where       TBNAME = 'PO'
+    End-Select
 
-  Update [$Schema]autokey set seed = seed+1 where tbname = 'ITEM';
-End-sql
-commit
+    Begin-Select
+                  To_Char(SEED+1)     &itemnum
+        from      AUTOKEY
+        where     TBNAME = 'ITEM'
+    End-Select
 
-! **** Do not update the prompt
-!let $errplace='Error in updating report'
-!Begin-sql  on-error=sql_error 
-!update report set prompt2='From '||$enddate||' End  Date:' where NAME='CONSIGN';
-!End-sql 
-!commit
+    let $errplace = 'Error in updating autokey'
+    Begin-Sql on-error=sql_error
+        update AUTOKEY set SEED = SEED+1 where TBNAME = 'PO';
+        update AUTOKEY set SEED = SEED+1 where TBNAME = 'ITEM';
+    End-Sql
 
 End-Procedure
 
+!--------------------------------------------------------
+!
+!--------------------------------------------------------
 Begin-Procedure Build_Po
+    let $errplace = 'Error in inserting into postatus'
+    Begin-Sql on-error=sql_error
+        Insert into Postatus (PONUM,STATUS,CHANGEDATE,CHANGEBY,MEMO)
+        Values ($Ponum,{postatus}, sysdate,$username ,'Consigment Order');
+    End-Sql
 
-let $errplace='Error in inserting into postatus'
-Begin-sql  on-error=sql_error 
+    let $errplace = 'Error in inserting into PO'
+    Begin-Sql on-error=sql_error
+        Insert into PO (            PONUM,DESCRIPTION,PURCHASEAGENT,ORDERDATE,REQUIREDDATE,
+                                    FOLLOWUPDATE,POTYPE,ORIGINALPONUM,STATUS,STATUSDATE,VENDOR,CONTACT,
+                                    FREIGHTTERMS,PAYMENTTERMS,SHIPVIA,CUSTOMERNUM,FOB,SHIPTO,SHIPTOATTN,
+                                    BILLTO,BILLTOATTN,TOTALCOST,CHANGEBY,CHANGEDATE,PRIORITY,HISTORYFLAG,
+                                    PO1,PO2,PO3,PO4,PO5,PO6,PO7,PO8,PO9,PO10,LDKEY,VENDELIVERYDATE,RECEIPTS,
+                                    CURRENCYCODE,EXCHANGERATE,EXCHANGEDATE,BUYAHEAD,TOTALTAX1,TOTALTAX2,
+                                    TOTALTAX3,INCLUSIVE1,INCLUSIVE2,INCLUSIVE3,INTERNAL,TOTALTAX4,TOTALTAX5,
+                                    INCLUSIVE4,INCLUSIVE5,STARTDATE,ENDDATE,PAYONRECEIPT,WFID,WFACTIVE )
+        Values (
+                                    $Ponum,$PODesc ,Upper($username) ,sysdate,sysdate,
+                                    NULL,'STD',NULL,{postatus},sysdate,&Vendor,&contact,
+                                    $freightterms,$paymentterms,NULL,NULL,NULL,$shipto,NULL,
+                                    $billto,NULL,#total ,$username,sysdate,3,'N',
+                                    NULL,'A4','Y',$username ,&ContactPhone ,$purchasegroup ,
+                                    NULL, &ContractNumber ,NULL,'PO10',NULL,NULL,'NONE',
+                                    &currencycode ,1,NULL,'N',NULL,NULL,
+                                    NULL,'N','N','N','N',NULL,NULL,
+                                    N','N',NULL,NULL,'N',NULL,'N');
+    End-Sql
 
- Insert into [$Schema]Postatus (PONUM,STATUS,CHANGEDATE,CHANGEBY,MEMO)
-                         Values ($Ponum,{postatus}, sysdate,$username ,'Consigment Order');
+    Do Build_POLine
 
-end-sql
-commit
+End-Procedure
 
-let $errplace='Error in inserting into PO'
-begin-sql  on-error=sql_error 
-
- Insert into [$Schema]PO    (PONUM,DESCRIPTION,PURCHASEAGENT,ORDERDATE,REQUIREDDATE,
-                             FOLLOWUPDATE,POTYPE,ORIGINALPONUM,STATUS,STATUSDATE,VENDOR,CONTACT,
-                             FREIGHTTERMS,PAYMENTTERMS,SHIPVIA,CUSTOMERNUM,FOB,SHIPTO,SHIPTOATTN,
-                             BILLTO,BILLTOATTN,TOTALCOST,CHANGEBY,CHANGEDATE,PRIORITY,HISTORYFLAG,
-                             PO1,PO2,PO3,PO4,PO5,PO6,PO7,PO8,PO9,PO10,LDKEY,VENDELIVERYDATE,RECEIPTS,
-                             CURRENCYCODE,EXCHANGERATE,EXCHANGEDATE,BUYAHEAD,TOTALTAX1,TOTALTAX2,
-                             TOTALTAX3,INCLUSIVE1,INCLUSIVE2,INCLUSIVE3,INTERNAL,TOTALTAX4,TOTALTAX5,
-                             INCLUSIVE4,INCLUSIVE5,STARTDATE,ENDDATE,PAYONRECEIPT,WFID,WFACTIVE
-                            ) 
-                   Values   ($Ponum,$PODesc ,upper($username) ,sysdate,sysdate,
-                             NULL,'STD',NULL,{postatus},sysdate,&vendor,&contact,
-                             $freightterms,$paymentterms,NULL,NULL,NULL,$shipto,NULL,
-                             $billto,NULL,#total ,$username,sysdate,3,'N',
-                             NULL,'A4','Y',$username ,&ContactPhone ,$purchasegroup ,
-                             NULL, &ContractNumber ,NULL,'PO10',NULL,NULL,'NONE',
-                             &currencycode ,1,NULL,'N',NULL,NULL,
-                             NULL,'N','N','N','N',NULL,NULL,
-                             'N','N',NULL,NULL,'N',NULL,'N');
-End-sql
-commit
-
-Do Build_poline
-!Do Build-matrectrans    ! **** in progress *****
-
-
-End-Procedure !Build_Po
-!------------------------------------------------------------------------------------------------------------------
-Begin-Procedure Build_Poline 
-!Build PO ine record
-
-!   Commented out by J Robertson 20/3/2002 see comment at head of file
+!--------------------------------------------------------
 !
-!let $errplace='Error in inserting into item'
-!Begin-sql  on-error=sql_error 
-! insert into [$schema]item (   itemnum,
-!                               description, rotating, lottype,
-!                               capitalized, outside, sparepartautoadd,
-!                               inspectionrequired )
-!                       values ( &itemnum ,
-!                                   'Consignment Special', 'N', 'NOLOT',
-!                                   'N', 'N',   'N',
-!                                   'N' );
+!--------------------------------------------------------
+Begin-Procedure Build_POLine
+    Begin-Select
+            Max(POLINEID)+1         &nextval / $nextval
+        from    POLINE
+    End-Select
+
+    let $errplace = 'Error in inserting into poline'
+
+    Begin-Sql on-error=sql_error
+        Insert into POLINE (    PONUM, ITEMNUM, STORELOC,
+                                ORDERQTY,ORDERUNIT,UNITCOST,CONVERSION,RECEIVEDQTY,RECEIVEDUNITCOST,
+                                RECEIVEDTOTALCOST,REJECTEDQTY,VENDELIVERYDATE,SUPERVISOR,ENTERDATE,
+                                ENTERBY,DESCRIPTION,PL1,PL2,PL3,PL4,
+                                PL5,LDKEY,WONUM,REQUESTEDBY,REQDELIVERYDATE,
+                                ISSUE,POLINENUM,TAXED,WPOPERATION,PLIN1,
+                                PLIN2,PLIN3,PLIN4,PLIN5,EQNUM,
+                                CHARGESTORE,GLDEBITACCT,GLCREDITACCT,LINECOST,TAX1CODE,TAX1,
+                                TAX2CODE,TAX2,TAX3CODE,TAX3,SCHARGECODE,RECEIPTREQD,
+                                MANUFACTURER,SERVICE,TAX4CODE,TAX4,TAX5CODE,TAX5,
+                                CATEGORY,REMARK,LOADEDCOST,PRORATESERVICE,AGREEMENTPONUM,
+                                AGREEMENTPOTYPE,RECEIPTSCOMPLETE,INSPECTIONREQUIRED,PRORATECOST,
+                                POLINEID,LINECOST2,MRNUM,MRLINENUM,PL6,
+                                PL7,PL8,PL9,PL10,PLIN6,
+                                PLIN7,PLIN8,PLIN9,POLALN1,POLALN2,POLALN3,
+                                POLALN4,POLALN5,PCARDNUM,PCARDTYPE,PCARDEXPDATE,
+                                FINCNTRLID,PCARDVERIFICATION,MKTPLCITEM,VENDORPACKCODE,VENDORPACKQUANTITY,
+                                VENDORWAREHOUSE)
+        Values (                $Ponum, &ITEMNUM, $STOREROOM,
+                                1','EA',#total,'1',0,0.00,
+                                0.00,0,NULL,NULL,sysdate,
+                                $username , $LineDesc ,NULL,NULL,NULL,NULL,
+                                NULL,NULL,NULL,$username,sysdate,
+                                N','1',NULL,NULL,NULL,
+                                NULL,NULL,NULL,NULL,NULL,
+                                N',&GLDebitAccount, NULL,#total,$tax1code,0,
+                                NULL,0,NULL,0,NULL,'Y',
+                                NULL,'N',NULL,0,NULL,0,
+                                NULL,NULL,#total,'N',$panum ,
+                                PRICE','N','N',NULL,
+                                $nextval,0,NULL,NULL,NULL,
+                                NULL,NULL,NULL,'28000',0,
+                                NULL,NULL,NULL,NULL,NULL,NULL,
+                                NULL,NULL,NULL,NULL,NULL,
+                                NULL,NULL,'N',NULL,NULL,
+                                NULL);
+    End-Sql
+
+    Do Receipt_PO
+
+End-Procedure
+
+!--------------------------------------------------------
 !
-!end-sql
-!commit
+!--------------------------------------------------------
+Begin-Procedure Receipt_PO
+    Begin-Select
+               Max(MATRECTRANSID)+1 &RECtransid / &rectransid / $transid
+        from   MATRECTRANS
+    End-Select
 
-!let $errplace='Error in inserting into inventory'
-!begin-sql  on-error=sql_error 
+    Begin-Select
+                FINANCIALPERIOD &V_FINANCIALPERIOD
+        from    FINANCIALPERIODS
+        where   SYSDATE between PERIODSTART and PERIODEND
+    End-Select
 
-! insert into [$schema]inventory ( itemnum,
-!                           category,orderunit,conversion,
-!                           orderqty,stdcost,avgcost,
-!                           lastcost,issueytd,issue1yrago,
-!                           issue2yrago,issue3yrago,ccf,
-!                           deliverytime,glaccount,controlacc )
-!                       VALUES (&ITEMNUM,
-!                           $Storeroom,0,0,
-!                           'SP',$ORDERUNIT,1,
-!                           0,0,0,
-!                           0,0,0,
-!                           0,0,0,
-!                           0,&GLAccount,&GLDebitAccount );
+    let #curbal =0
 
-!end-sql
+    Begin-Select
+            Nvl(Sum(curbal),0)          &curbal / #curbal
+        from    INVBALANCES
+        where   ITEMNUM = &itemnum
+        and     LOCATION = $storeroom
+    End-Select
 
+    let $errplace = 'Error in inserting into matrectrans'
+    Begin-Sql on-error=sql_error
+        insert into MATRECTRANS (   ITEMNUM,TOSTORELOC,
+                                    TRANSDATE,ACTUALDATE,QUANTITY,RECEIVEDUNIT,ISSUETYPE,
+                                    UNITCOST,ACTUALCOST,PONUM,INVOICENUM,REJECTCODE,
+                                    REJECTQTY,CONVERSION,WONUM,
+                                    EQNUM,ENTERBY,IT1,IT2,IT3,IT4,IT5,
+                                    LDKEY,OUTSIDE,WPOPERATION,ISSUETO,PACKINGSLIPNUM,
+                                    POLINENUM,ISSUE,REQUESTEDBY,TOTALCURBAL, OLDAVGCOST,
+                                    ITIN1,ITIN2,ITIN3,
+                                    TOBIN,GLDEBITACCT,GLCREDITACCT,LINECOST,FINANCIALPERIOD,
+                                    CURRENCYCODE,EXCHANGERATE,CURRENCYUNITCOST,MANUFACTURER,
+                                    MODELNUM,CURRENCYLINECOST,LOCATION,DESCRIPTION,
+                                    REMARK,FROMSTORELOC,FROMBIN,QTYHELD,FROMLOT,
+                                    TOLOT,LOADEDCOST,TAX1CODE,TAX1,TAX2CODE,TAX2,TAX3CODE,
+                                    TAX3,TAX4CODE,TAX4,TAX5CODE,TAX5,PRORATED,
+                                    PRORATECOST,STATUS,STATUSDATE,STATUSCHANGEBY,SOURCESYSID,
+                                    QTYREQUESTED,CURBAL,EXCHANGERATE2,LINECOST2,MRNUM,MRLINENUM,
+                                    MATRECTRANSID,OWNERSYSID,EXTERNALREFID,IT6,IT7,IT8,
+                                    IT9,IT10,ITIN4,ITIN5,ITIN6,ITIN7,APISEQ,INTERID,MIGCHANGEID,
+                                    SENDERSYSID,EXPDONE,FINCNTRLID)
+        values (                    &ITEMNUM,$storeroom,
+                                    sysdate,sysdate,1,'EA','RECEIPT',
+                                    #total,0,$ponum,null,null,
+                                    0,1,null,
+                                    null,Upper($username),null,null,null,null,null,
+                                    null,'N',null,null,null,
+                                    1,null,Upper($username),#CURBAL,NULL,
+                                    null,null,null,
+                                    null,&GLDEBITACCOUNT,null,#total,&v_FINANCIALPERIOD,
+                                    &CURRENCYCODE,'1',#total,null,
+                                    null,#total,null,$linedesc,
+                                    built by consign',null,null,null,null,
+                                    null,#total,$TAX1CODE,0,null,0,null,
+                                    0,null,0,null,0,'N',
+                                    0,null,null,null,null,
+                                    0,#curbal,null,0,null,null,
+                                    $transid,null,null,null,null,null,
+                                    null,null,null,null,null,null,null,null,null,
+                                    null,null,null);
+        ;
+    End-Sql
 
-Begin-Select
-!This value retrived will be copied to the line as PRLINE.POLINEID must match, with POLINE.POLINEID
-max(polineid)+1  &nextval
- move &nextval to $nextval
- From [$schema]poline
-End-Select
+    let $errplace = 'Error in updating poline'
 
-let $errplace='Error in inserting into poline'
-begin-sql  on-error=sql_error
-                                
- Insert into [$Schema]Poline    (PONUM, ITEMNUM, STORELOC,  
-                                 ORDERQTY,ORDERUNIT,UNITCOST,CONVERSION,RECEIVEDQTY,RECEIVEDUNITCOST,
-                                 RECEIVEDTOTALCOST,REJECTEDQTY,VENDELIVERYDATE,SUPERVISOR,ENTERDATE,
-                                 ENTERBY,DESCRIPTION,PL1,PL2,PL3,PL4,
-                                 PL5,LDKEY,WONUM,REQUESTEDBY,REQDELIVERYDATE,
-                                 ISSUE,POLINENUM,TAXED,WPOPERATION,PLIN1,
-                                 PLIN2,PLIN3,PLIN4,PLIN5,EQNUM,
-                                 CHARGESTORE,GLDEBITACCT,GLCREDITACCT,LINECOST,TAX1CODE,TAX1,
-                                 TAX2CODE,TAX2,TAX3CODE,TAX3,SCHARGECODE,RECEIPTREQD,
-                                 MANUFACTURER,SERVICE,TAX4CODE,TAX4,TAX5CODE,TAX5,
-                                 CATEGORY,REMARK,LOADEDCOST,PRORATESERVICE,AGREEMENTPONUM,
-                                 AGREEMENTPOTYPE,RECEIPTSCOMPLETE,INSPECTIONREQUIRED,PRORATECOST,
-                                 POLINEID,LINECOST2,MRNUM,MRLINENUM,PL6,
-                                 PL7,PL8,PL9,PL10,PLIN6,
-                                 PLIN7,PLIN8,PLIN9,POLALN1,POLALN2,POLALN3,
-                                 POLALN4,POLALN5,PCARDNUM,PCARDTYPE,PCARDEXPDATE,
-                                 FINCNTRLID,PCARDVERIFICATION,MKTPLCITEM,VENDORPACKCODE,VENDORPACKQUANTITY,
-                                 VENDORWAREHOUSE)
-                    Values      ($Ponum, &ITEMNUM, $STOREROOM,
-                                 '1','EA',#total,'1',0,0.00,
-                                 0.00,0,NULL,NULL,sysdate,
-                                 $username , $LineDesc ,NULL,NULL,NULL,NULL,
-                                 NULL,NULL,NULL,$username,sysdate,
-                                 'N','1',NULL,NULL,NULL,
-                                 NULL,NULL,NULL,NULL,NULL,
-                                 'N',&GLDebitAccount, NULL,#total,$tax1code,0,
-                                 NULL,0,NULL,0,NULL,'Y',
-                                 NULL,'N',NULL,0,NULL,0,
-                                 NULL,NULL,#total,'N',$panum ,
-                                 'PRICE','N','N',NULL,
-                                 $nextval,0,NULL,NULL,NULL,
-                                 NULL,NULL,NULL,'28000',0,
-                                 NULL,NULL,NULL,NULL,NULL,NULL,
-                                 NULL,NULL,NULL,NULL,NULL,
-                                 NULL,NULL,'N',NULL,NULL,
-                                 NULL);
-End-sql
-commit
+    Begin-Sql on-error=sql_error
+            Update      POLINE
+            set         RECEIVEDQTY = 1,
+                        RECEIVEDUNITCOST = #total,
+                        RECEIVEDTOTALCOST = #total,
+                        RECEIPTSCOMPLETE = 'Y'
+            where       PONUM = $ponum
+            and         POLINENUM = '1';
+    End-Sql
 
-do receipt_po
+    let $errplace = 'Error updating po header record'
 
-End-Procedure !Build_Poline
+    Begin-Sql on-error=sql_error
+        update    PO
+        set       RECEIPTS = 'COMPLETE'
+        where     PONUM = $ponum;
+    End-Sql
 
-Begin-Procedure receipt_po 
-!PRINT 'RUNNING RECEIPT' (+10,1)
-! Get the next matrectransid number
-BEGIN-SELECT
-MAX(MATRECTRANSID)+1  &RECtransid
-   move &rectransid to $transid
-FROM [$schema]MATRECTRANS
-END-select
- !PRINT $TRAINSID (+10,1)
-! Get financila period
-BEGIN-SELECT
-FINANCIALPERIOD    &V_FINANCIALPERIOD
-FROM [$schema]FINANCIALPERIODS
-WHERE SYSDATE BETWEEN PERIODSTART AND PERIODEND
-end-select
-   !PRINT 'FIN' (+10,1)
-   let #curbal =0
+End-Procedure
 
-begin-select
-nvl(sum(curbal),0)  &curbal
-   move &curbal to #curbal
-from [$schema]invbalances where itemnum = &itemnum
-   and location = $storeroom
-end-select
-! PRINT #CURBAL (+10,1)
+!--------------------------------------------------------
+!
+!--------------------------------------------------------
+Begin-Procedure Price_Check
+    let $contract = ''
+    let $panum = ''
+    let $orderunit = ''
+    Begin-Select
+            POLINE.UNITCOST                        &CHECKLASTCOST / #LASTCOST
+            POLINE.CONVERSION                      &conversion
+            POLINE.ORDERUNIT                       &orderunit
+            PO.PO8                                 &contract
+            PO.CURRENCYCODE                        &pricecurrency / $currencycode
+            PO.EXCHANGERATE                        &pricerate / #exchangerate
+            PO.PONUM                               &panum
+            To_Char(PO.EXCHANGEDATE,'DD-MON-YYYY') &pricedate / $exchangedate
 
-   let $errplace='Error in inserting into matrectrans'
-begin-sql  on-error=sql_error 
-insert into matrectrans (ITEMNUM,TOSTORELOC,
-                         TRANSDATE,ACTUALDATE,QUANTITY,RECEIVEDUNIT,ISSUETYPE,
-                         UNITCOST,ACTUALCOST,PONUM,INVOICENUM,REJECTCODE,
-                         REJECTQTY,CONVERSION,WONUM,
-                         EQNUM,ENTERBY,IT1,IT2,IT3,IT4,IT5,
-                         LDKEY,OUTSIDE,WPOPERATION,ISSUETO,PACKINGSLIPNUM,
-                         POLINENUM,ISSUE,REQUESTEDBY,TOTALCURBAL, OLDAVGCOST,
-                         ITIN1,ITIN2,ITIN3,
-                         TOBIN,GLDEBITACCT,GLCREDITACCT,LINECOST,FINANCIALPERIOD,
-                         CURRENCYCODE,EXCHANGERATE,CURRENCYUNITCOST,MANUFACTURER,
-                         MODELNUM,CURRENCYLINECOST,LOCATION,DESCRIPTION,
-                         REMARK,FROMSTORELOC,FROMBIN,QTYHELD,FROMLOT,
-                         TOLOT,LOADEDCOST,TAX1CODE,TAX1,TAX2CODE,TAX2,TAX3CODE,
-                         TAX3,TAX4CODE,TAX4,TAX5CODE,TAX5,PRORATED,
-                         PRORATECOST,STATUS,STATUSDATE,STATUSCHANGEBY,SOURCESYSID, 
-                         QTYREQUESTED,CURBAL,EXCHANGERATE2,LINECOST2,MRNUM,MRLINENUM,
-                         MATRECTRANSID,OWNERSYSID,EXTERNALREFID,IT6,IT7,IT8,
-                         IT9,IT10,ITIN4,ITIN5,ITIN6,ITIN7,APISEQ,INTERID,MIGCHANGEID,
-                         SENDERSYSID,EXPDONE,FINCNTRLID)
-                 values (&ITEMNUM,$storeroom,
-                         sysdate,sysdate,1,'EA','RECEIPT',
-                         #total,0,$ponum,null,null,
-                         0,1,null,
-                         null,upper($username),null,null,null,null,null,
-                         null,'N',null,null,null,
-                         1,null,upper($username),#CURBAL,NULL,
-                         null,null,null,
-                         null,&GLDEBITACCOUNT,null,#total,&v_FINANCIALPERIOD,
-                         &CURRENCYCODE,'1',#total,null,
-                         null,#total,null,$linedesc,
-                         'built by consign',null,null,null,null,
-                         null,#total,$TAX1CODE,0,null,0,null,
-                         0,null,0,null,0,'N',
-                         0,null,null,null,null, 
-                         0,#curbal,null,0,null,null,
-                         $transid,null,null,null,null,null,
-                         null,null,null,null,null,null,null,null,null,
-                         null,null,null);
-                
-   commit;
-end-sql
+        let $PriceFlag = 'Y'
 
-   let $errplace='Error in updating poline'
-   
-begin-sql on-error=sql_error
- update poline set  RECEIVEDQTY  = 1,RECEIVEDUNITCOST = #total      
-  ,RECEIVEDTOTALCOST = #total,RECEIPTSCOMPLETE='Y' where ponum=$ponum and polinenum='1';
-end-sql
+        from      POLINE,
+                  PO
+        where     PO.PONUM = POLINE.PONUM
+        and       POTYPE = 'PRICE'
+        and       POLINE.ITEMNUM = $itemnum
+        and       PO.VENDOR = $Vendor
+        and    ((trunc(sysdate) >= trunc(PO.STARTDATE))
+        and     (trunc(sysdate) <= trunc(PO.ENDDATE)))
+    End-Select
+End-Procedure
 
-   let $errplace='Error updating po header record'
+!--------------------------------------------------------
+!
+!--------------------------------------------------------
+Begin-Procedure GetInvTransAdjustments
+    Alter-Printer Font=4 Point-Size=8
+    Begin-Select
+        INVTRANS.ITEMNUM                            &vocabNumber
+        0-INVTRANS.QUANTITY                         &InvTransQty
+        INVTRANS.TRANSTYPE                          &InvTransType
+        INVTRANS.TRANSDATE                          &InvTransDate
+        INVTRANS.LINECOST                           &InvTransCost / #InvTransCost
+        ITEM.DESCRIPTION                            &itemDescription
 
-begin-sql on-error=sql_error 
- update po set receipts='COMPLETE' where ponum = $ponum;     
-end-sql 
-                                           
-end-procedure
+        let #InvTransCost = 0-#InvTransCost
 
-! Find out if item is on a current price agreement. If so use the unitcost
-Begin-Procedure PRICE_CHECK
-   let $contract=''
-   let $panum=''
-   let $orderunit=''
-begin-select
-poline.unitcost                        &CHECKLASTCOST
-poline.conversion                      &conversion
-poline.orderunit                       &orderunit
-po.po8                                 &contract        
-po.currencycode                        &pricecurrency
-po.exchangerate                        &pricerate
-po.ponum                               &panum
-TO_CHAR(po.exchangedate,'DD-MON-YYYY') &pricedate
+        Print &vocabNumber          (+11,1)
+        Print &itemDescription      ( ,67,55)
+        Print &InvTransDate         ( ,320) Edit DD-MON-YYYY
+        Print &InvTransQty          ( ,375) Edit 99999999
+        Print &InvTransType         ( ,440)
+        Print #InvTransCost         ( ,551) Edit 99999999.99
 
-   move &CHECKLASTCOST TO #LASTCOST
-   move &contract to $contract
-   let $currencycode=&pricecurrency
-   let #exchangerate=&pricerate
-   let $exchangedate=&pricedate
-   let #conversion = &conversion  
-   let $orderunit  = &orderunit
-   let $panum=&panum
-   let $priceflag='Y'
+        let #InvTotalTransCost = #InvTotalTransCost + #InvTransCost
 
- from [$schema]poline,[$SCHEMA]po
- where po.ponum = poline.ponum
- and potype='PRICE'
- and poline.itemnum = $itemnum
- and po.vendor = $vendor
- !1gvb1 - put this back
- and ((trunc(sysdate)>=trunc(po.startdate))
- and  (trunc(sysdate)<=trunc(po.enddate)))
-end-select
-end-procedure
+        from        INVTRANS,
+                    ITEM
+        where       INVTRANS.TRANSTYPE in ('CURBALADJ','RECBALADJ')
+        and         INVTRANS.TRANSDATE >= TO_DATE($STARTDATE,'YYYY-MON-DD HH24:MI:SS')
+        and         INVTRANS.TRANSDATE <= TO_DATE($EndDATE,'YYYY-MON-DD HH24:MI:SS')
+        and         INVTRANS.STORELOC = $StoreRoom
+        and         INVTRANS.ITEMNUM = ITEM.ITEMNUM
+        Order By    INVTRANS.STORELOC,
+                    INVTRANS.ITEMNUM,
+                    INVTRANS.TRANSDATE
+    End-Select
+End-Procedure
 
-Begin-Procedure GetInvTransAdjustments                          !81155 - added
-    
-   Alter-Printer Font=4 Point-Size=8    ! [SQR.INI] 4=Arial,proportional 
-
-begin-select
-invtrans.ITEMNUM                     &vocabNumber
-0-invtrans.quantity                  &InvTransQty
-invtrans.transtype                   &InvTransType
-invtrans.transdate                   &InvTransDate    
-invtrans.linecost                    &InvTransCost
-ITEM.description                     &itemDescription
-
-
-   move &InvTransCost to #InvTransCost
-   let #InvTransCost = 0-#InvTransCost 
-
-   print &vocabNumber       (+11,1)
-   print &itemDescription   (   ,67,55)
-   print &InvTransDate      (   ,320) Edit DD-MON-YYYY
-   print &InvTransQty       (   ,375) Edit 99999999 
-   print &InvTransType      (   ,440) 
-   print #InvTransCost      (   ,551) Edit 99999999.99
-
-   let #InvTotalTransCost = #InvTotalTransCost + #InvTransCost
-
-from   [$schema]invtrans, [$schema]item
-where  invtrans.transtype in ('CURBALADJ','RECBALADJ')
-And invtrans.TRANSDATE >= TO_DATE($STARTDATE,'YYYY-MON-DD HH24:MI:SS')
-And invtrans.TRANSDATE <= TO_DATE($ENDDATE,'YYYY-MON-DD HH24:MI:SS')
-and invtrans.storeloc = $StoreRoom
-and invtrans.itemnum = ITEM.ITEMNUM
-     Order By invtrans.STORELOC,
-              invtrans.ITEMNUM,
-              invtrans.transdate
-end-select
-end-procedure
-
-!------------------------------------------------------------------------------------------------------------------
+!--------------------------------------------------------
+!
+!--------------------------------------------------------
 Begin-Procedure sql_error
-! Print the error position & Oracle SQL error, Then stop the report.
-   print $errplace      (+20,1)
-   print $sql-error     (+10,5)
+    Print $errplace (+20,1)
+    Print $sql-error (+10,5)
+    Print $Ponum (+10,+10)
+    Print &ITEMNUM (+20,+10)
+    Print $STOREROOM (+10,+10)
+    Print #total (+10,+10)
+    Print $username (+10,+10)
+    Print $LineDesc (+10,+10)
+    Print &GLDebitAccount (+10,+10)
+    Print $tax1code (+10,+10)
+    Print $panum (+10,+10)
+    Print $nextval (+10,+10)
+    Stop quiet
+End-Procedure
 
-   print $Ponum         (+10,+10)
-   print &ITEMNUM       (+20,+10)
-   print $STOREROOM     (+10,+10)
-   print #total         (+10,+10)
-   print $username      (+10,+10)
-   print $LineDesc      (+10,+10)
-   print &GLDebitAccount    (+10,+10)
-   print $tax1code  (+10,+10)
-   print $panum (+10,+10)
-   print $nextval   (+10,+10)
+!--------------------------------------------------------
+!
+!--------------------------------------------------------
+Begin-Procedure BalanceAdjustments
+    Alter-Printer Font=4 Point-Size=10
+    Print 'Balance Adjustments' (+2,1) Bold
+    graphic ( ,1,700) horz-line
 
-   stop quiet
-end-procedure
+    Alter-Printer Font=4 Point-Size=8
+    Do GetInvTransAdjustments
 
-!------------------------------------------------------------------------------------------------------------------
-Begin-Procedure BalanceAdjustments                   !81155 - added
-   Alter-Printer Font=4 Point-Size=10    ! [SQR.INI] 4=Arial,proportional
-   Print 'Balance Adjustments' (+2,1) Bold 
-   graphic          ( ,1,700)   horz-line
+    Alter-Printer Point-Size=10
+    Position (+12,)
 
-   Alter-Printer Font=4 Point-Size=8    ! [SQR.INI] 4=Arial,proportional 
+    let #total = #InvTotalTransCost + #total
 
-   do GetInvTransAdjustments
-  
-   Alter-Printer Point-Size=10    ! [SQR.INI] 4=MS Shell Dlg,proportional
-   Position (+12,)
-   let #total = #InvTotalTransCost +#total
+    Print #InvTotalTransCost (+20,551) Edit 99999999.99
+    Print 'Sub Total - Adjustments' (,400) bold
+    Print #total (+20,551) Edit 99999999.99
+    Print 'Total Contract Value for period' (,400) bold
 
-   Print #InvTotalTransCost (+20,551) Edit 99999999.99
-   Print 'Sub Total - Adjustments'  (,400) bold
-   Print #total (+20,551) Edit 99999999.99
-   Print 'Total Contract Value for period'  (,400) bold                   
-   
-end-procedure
+End-Procedure
 
-!NOTE: 16105 Creates the csv file ready for writing
-BEGIN-PROCEDURE openPDFFile 
+!--------------------------------------------------------
+!
+!--------------------------------------------------------
+Begin-Procedure openPDFFile
     let $fileName = {FILEPATH}
     let $datefd = $current-date
-    UNSTRING $datefd by '-' INTO $DD $MON $YYYY
+    Unstring $datefd by '-' INTO $DD $MON $YYYY
     Let $datefd = $YYYY||'-'||$MON||'-'||$DD
-    let $fileName =  $fileName || $datefd || ' Consign ' || $storeroom || '.pdf'
-
-    let $message = 'A PDF has been created...  ' || $fileName                                                           
-    print $message (15,5) bold 
-
+    let $fileName = $fileName || $datefd || ' Consign ' || $storeroom || '.pdf'
+    let $message = 'A PDF has been created... ' || $fileName
+    Print $message (15,5) bold
     new-report $fileName
-END-PROCEDURE !openPDFFile
+End-Procedure
