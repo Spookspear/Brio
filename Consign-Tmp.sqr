@@ -1,0 +1,262 @@
+#define RepName 'CONSIGN.SQT'
+#define POStatus 'Print'
+#define Notusedprompt 'Parameter not used. Press enter to continue'
+#define Schemaprompt 'Insert schema name'
+#define whereprompt 'Insert where clause'
+#define p1type 'DATE'
+#define p2type 'CHAR'
+#define p3type 'N/A'
+#define p4type 'N/A'
+#define FILEPATH '\\in1grafap002\PUBLIC\Maximo\Consignment Reports\'
+#define p1prompt 'Enter Storeroom'
+#define p2prompt maxlen = 11 'Enter Last Date for transaction (DD-MON-YYYY):'
+#define p3prompt 'Preview Y/N'
+#define p4prompt 'Enter purchase group'
+
+Begin-Program
+    Do BalanceAdjustments
+
+    If $Preview = 'N'
+        Do Preview
+    End-If
+
+End-Program
+
+!--------------------------------------------------------
+!
+!--------------------------------------------------------
+Begin-Procedure Preview
+    let $errplace = 'Error in inserting into reportruns'
+    Begin-Sql on-error=sql_error
+        INSERT INTO REPORTRUNS (
+                    REPORTNAME,
+                    RUNDATE,
+                    LASTDATE,
+                    USERNAME,
+                    DATA,
+                    LOCATION,
+                    VENDOR 
+        ) VALUES (  'CONSIGN.SQT',
+                    SYSDATE,
+                    TO_DATE($EndDate,'YYYY-MON-DD HH24:MI:SS'),
+                    $username,
+                    $ponum ,
+                    $StoreRoom,
+                    &Vendor );
+    End-Sql
+
+    If #total > 0
+        Do Build_Po
+    End-If
+
+End-Procedure
+
+!--------------------------------------------------------
+!
+!--------------------------------------------------------
+Begin-Procedure Get_PO
+    Begin-Select
+            To_Char(SEED+1) &ponumins
+            PREFIX          &PREFIX
+
+            let $ponumins=&prefix||To_Char(#ponumins)
+            let $Ponum = $ponumins
+
+        from        AUTOKEY
+        where       TBNAME = 'PO'
+    End-Select
+
+    Begin-Select
+                  To_Char(SEED+1)     &itemnum
+        from      AUTOKEY
+        where     TBNAME = 'ITEM'
+    End-Select
+
+    let $errplace = 'Error in updating autokey'
+    Begin-Sql on-error=sql_error
+        update AUTOKEY set SEED = SEED+1 where TBNAME = 'PO';
+        update AUTOKEY set SEED = SEED+1 where TBNAME = 'ITEM';
+    End-Sql
+
+End-Procedure
+
+!--------------------------------------------------------
+!
+!--------------------------------------------------------
+Begin-Procedure Build_PO
+    let $errplace = 'Error in inserting into postatus'
+    Begin-Sql on-error=sql_error
+        Insert into Postatus (PONUM,STATUS,CHANGEDATE,CHANGEBY,MEMO)
+        Values ($Ponum,{postatus}, SYSDATE,$username ,'Consigment Order');
+    End-Sql
+
+    let $errplace = 'Error in inserting into PO'
+    Begin-Sql on-error=sql_error
+        Insert into PO (            PONUM,DESCRIPTION,PURCHASEAGENT,ORDERDATE,REQUIREDDATE,
+                                    FOLLOWUPDATE,POTYPE,ORIGINALPONUM,STATUS,STATUSDATE,VENDOR,CONTACT,
+                                    FREIGHTTERMS,PAYMENTTERMS,SHIPVIA,CUSTOMERNUM,FOB,SHIPTO,SHIPTOATTN,
+                                    BILLTO,BILLTOATTN,TOTALCOST,CHANGEBY,CHANGEDATE,PRIORITY,HISTORYFLAG,
+                                    PO1,PO2,PO3,PO4,PO5,PO6,PO7,PO8,PO9,PO10,LDKEY,VENDELIVERYDATE,RECEIPTS,
+                                    CURRENCYCODE,EXCHANGERATE,EXCHANGEDATE,BUYAHEAD,TOTALTAX1,TOTALTAX2,
+                                    TOTALTAX3,INCLUSIVE1,INCLUSIVE2,INCLUSIVE3,INTERNAL,TOTALTAX4,TOTALTAX5,
+                                    INCLUSIVE4,INCLUSIVE5,STARTDATE,ENDDATE,PAYONRECEIPT,WFID,WFACTIVE )
+        Values (
+                                    $Ponum,$PODesc ,Upper($username) ,SYSDATE,SYSDATE,
+                                    NULL,'STD',NULL,{postatus},SYSDATE,&Vendor,&contact,
+                                    $freightterms,$paymentterms,NULL,NULL,NULL,$shipto,NULL,
+                                    $billto,NULL,#total ,$username,SYSDATE,3,'N',
+                                    NULL,'A4','Y',$username ,&ContactPhone ,$purchasegroup ,
+                                    NULL, &ContractNumber ,NULL,'PO10',NULL,NULL,'NONE',
+                                    &currencycode ,1,NULL,'N',NULL,NULL,
+                                    NULL,'N','N','N','N',NULL,NULL,
+                                    N','N',NULL,NULL,'N',NULL,'N');
+    End-Sql
+
+    Do Build_POLine
+
+End-Procedure
+
+!--------------------------------------------------------
+!
+!--------------------------------------------------------
+Begin-Procedure Build_POLine
+    Begin-Select
+            Max(POLINEID)+1         &nextval / $nextval
+        from    POLINE
+    End-Select
+
+    let $errplace = 'Error in inserting into poline'
+
+    Begin-Sql on-error=sql_error
+        Insert into POLINE (    PONUM, ITEMNUM, STORELOC,
+                                ORDERQTY,ORDERUNIT,UNITCOST,CONVERSION,RECEIVEDQTY,RECEIVEDUNITCOST,
+                                RECEIVEDTOTALCOST,REJECTEDQTY,VENDELIVERYDATE,SUPERVISOR,ENTERDATE,
+                                ENTERBY,DESCRIPTION,PL1,PL2,PL3,PL4,
+                                PL5,LDKEY,WONUM,REQUESTEDBY,REQDELIVERYDATE,
+                                ISSUE,POLINENUM,TAXED,WPOPERATION,PLIN1,
+                                PLIN2,PLIN3,PLIN4,PLIN5,EQNUM,
+                                CHARGESTORE,GLDEBITACCT,GLCREDITACCT,LINECOST,TAX1CODE,TAX1,
+                                TAX2CODE,TAX2,TAX3CODE,TAX3,SCHARGECODE,RECEIPTREQD,
+                                MANUFACTURER,SERVICE,TAX4CODE,TAX4,TAX5CODE,TAX5,
+                                CATEGORY,REMARK,LOADEDCOST,PRORATESERVICE,AGREEMENTPONUM,
+                                AGREEMENTPOTYPE,RECEIPTSCOMPLETE,INSPECTIONREQUIRED,PRORATECOST,
+                                POLINEID,LINECOST2,MRNUM,MRLINENUM,PL6,
+                                PL7,PL8,PL9,PL10,PLIN6,
+                                PLIN7,PLIN8,PLIN9,POLALN1,POLALN2,POLALN3,
+                                POLALN4,POLALN5,PCARDNUM,PCARDTYPE,PCARDEXPDATE,
+                                FINCNTRLID,PCARDVERIFICATION,MKTPLCITEM,VENDORPACKCODE,VENDORPACKQUANTITY,
+                                VENDORWAREHOUSE)
+        Values (                $Ponum, &ITEMNUM, $STOREROOM,
+                                1','EA',#total,'1',0,0.00,
+                                0.00,0,NULL,NULL,SYSDATE,
+                                $username , $LineDesc ,NULL,NULL,NULL,NULL,
+                                NULL,NULL,NULL,$username,SYSDATE,
+                                N','1',NULL,NULL,NULL,
+                                NULL,NULL,NULL,NULL,NULL,
+                                N',&GLDebitAccount, NULL,#total,$tax1code,0,
+                                NULL,0,NULL,0,NULL,'Y',
+                                NULL,'N',NULL,0,NULL,0,
+                                NULL,NULL,#total,'N',$panum ,
+                                PRICE','N','N',NULL,
+                                $nextval,0,NULL,NULL,NULL,
+                                NULL,NULL,NULL,'28000',0,
+                                NULL,NULL,NULL,NULL,NULL,NULL,
+                                NULL,NULL,NULL,NULL,NULL,
+                                NULL,NULL,'N',NULL,NULL,
+                                NULL);
+    End-Sql
+
+    Do Receipt_PO
+
+End-Procedure
+
+!--------------------------------------------------------
+!
+!--------------------------------------------------------
+Begin-Procedure Receipt_PO
+    Begin-Select
+               Max(MATRECTRANSID)+1 &RECtransid / &rectransid / $transid
+        from   MATRECTRANS
+    End-Select
+
+    Begin-Select
+                FINANCIALPERIOD &V_FINANCIALPERIOD
+        from    FINANCIALPERIODS
+        where   SYSDATE between PERIODSTART and PERIODEND
+    End-Select
+
+    let #curbal =0
+
+    Begin-Select
+            Nvl(Sum(curbal),0)          &curbal / #curbal
+        from    INVBALANCES
+        where   ITEMNUM = &itemnum
+        and     LOCATION = $storeroom
+    End-Select
+
+    let $errplace = 'Error in inserting into matrectrans'
+    Begin-Sql on-error=sql_error
+        insert into MATRECTRANS (   ITEMNUM,TOSTORELOC,
+                                    TRANSDATE,ACTUALDATE,QUANTITY,RECEIVEDUNIT,ISSUETYPE,
+                                    UNITCOST,ACTUALCOST,PONUM,INVOICENUM,REJECTCODE,
+                                    REJECTQTY,CONVERSION,WONUM,
+                                    EQNUM,ENTERBY,IT1,IT2,IT3,IT4,IT5,
+                                    LDKEY,OUTSIDE,WPOPERATION,ISSUETO,PACKINGSLIPNUM,
+                                    POLINENUM,ISSUE,REQUESTEDBY,TOTALCURBAL, OLDAVGCOST,
+                                    ITIN1,ITIN2,ITIN3,
+                                    TOBIN,GLDEBITACCT,GLCREDITACCT,LINECOST,FINANCIALPERIOD,
+                                    CURRENCYCODE,EXCHANGERATE,CURRENCYUNITCOST,MANUFACTURER,
+                                    MODELNUM,CURRENCYLINECOST,LOCATION,DESCRIPTION,
+                                    REMARK,FROMSTORELOC,FROMBIN,QTYHELD,FROMLOT,
+                                    TOLOT,LOADEDCOST,TAX1CODE,TAX1,TAX2CODE,TAX2,TAX3CODE,
+                                    TAX3,TAX4CODE,TAX4,TAX5CODE,TAX5,PRORATED,
+                                    PRORATECOST,STATUS,STATUSDATE,STATUSCHANGEBY,SOURCESYSID,
+                                    QTYREQUESTED,CURBAL,`EXCHANGERATE2,LINECOST2,MRNUM,MRLINENUM,
+                                    MATRECTRANSID,OWNERSYSID,EXTERNALREFID,IT6,IT7,IT8,
+                                    IT9,IT10,ITIN4,ITIN5,ITIN6,ITIN7,APISEQ,INTERID,MIGCHANGEID,
+                                    SENDERSYSID,EXPDONE,FINCNTRLID)
+        values (                    &ITEMNUM,$storeroom,
+                                    SYSDATE,SYSDATE,1,'EA','RECEIPT',
+                                    #total,0,$ponum,null,null,
+                                    0,1,null,
+                                    null,Upper($username),null,null,null,null,null,
+                                    null,'N',null,null,null,
+                                    1,null,Upper($username),#CURBAL,NULL,
+                                    null,null,null,
+                                    null,&GLDEBITACCOUNT,null,#total,&v_FINANCIALPERIOD,
+                                    &CURRENCYCODE,'1',#total,null,
+                                    null,#total,null,$linedesc,
+                                    built by consign',null,null,null,null,
+                                    null,#total,$TAX1CODE,0,null,0,null,
+                                    0,null,0,null,0,'N',
+                                    0,null,null,null,null,
+                                    0,#curbal,null,0,null,null,
+                                    $transid,null,null,null,null,null,
+                                    null,null,null,null,null,null,null,null,null,
+                                    null,null,null);
+        ;
+    End-Sql
+
+    let $errplace = 'Error in updating poline'
+
+    Begin-Sql on-error=sql_error
+            Update      POLINE
+            set         RECEIVEDQTY = 1,
+                        RECEIVEDUNITCOST = #total,
+                        RECEIVEDTOTALCOST = #total,
+                        RECEIPTSCOMPLETE = 'Y'
+            where       PONUM = $ponum
+            and         POLINENUM = '1';
+    End-Sql
+
+    let $errplace = 'Error updating po header record'
+
+    Begin-Sql on-error=sql_error
+        update    PO
+        set       RECEIPTS = 'COMPLETE'
+        where     PONUM = $ponum;
+    End-Sql
+
+End-Procedure
+
+

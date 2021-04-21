@@ -724,7 +724,7 @@ End-Procedure
 
 !--------------------------------------------------------
 ! Companies
-!------------ ------------------------------------------------
+!--------------------------------------------------------
 Begin-Procedure Companies
     move 0 to #found
     If $Vendor <> $lastVendor                                                                               ! next bit added with minval.....
