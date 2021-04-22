@@ -289,7 +289,7 @@ End-Procedure
 Begin-Procedure Preview
     let $errplace = 'Error in inserting into reportruns'
     Begin-Sql on-error=sql_error
-        INSERT INTO REPORTRUNS (
+        insert into REPORTRUNS (
                     REPORTNAME,
                     RUNDATE,
                     LASTDATE,
@@ -485,13 +485,13 @@ End-Procedure
 Begin-Procedure Build_Po
     let $errplace = 'Error in inserting into postatus'
     Begin-Sql on-error=sql_error
-        Insert into Postatus (PONUM,STATUS,CHANGEDATE,CHANGEBY,MEMO)
-        Values ($Ponum,{postatus}, sysdate,$username ,'Consigment Order');
+        insert into POSTATUS (PONUM,STATUS,CHANGEDATE,CHANGEBY,MEMO)
+        values ($Ponum,{postatus}, sysdate,$username ,'Consigment Order');
     End-Sql
 
     let $errplace = 'Error in inserting into PO'
     Begin-Sql on-error=sql_error
-        Insert into PO (            PONUM,DESCRIPTION,PURCHASEAGENT,ORDERDATE,REQUIREDDATE,
+        insert into PO (            PONUM,DESCRIPTION,PURCHASEAGENT,ORDERDATE,REQUIREDDATE,
                                     FOLLOWUPDATE,POTYPE,ORIGINALPONUM,STATUS,STATUSDATE,VENDOR,CONTACT,
                                     FREIGHTTERMS,PAYMENTTERMS,SHIPVIA,CUSTOMERNUM,FOB,SHIPTO,SHIPTOATTN,
                                     BILLTO,BILLTOATTN,TOTALCOST,CHANGEBY,CHANGEDATE,PRIORITY,HISTORYFLAG,
@@ -499,7 +499,7 @@ Begin-Procedure Build_Po
                                     CURRENCYCODE,EXCHANGERATE,EXCHANGEDATE,BUYAHEAD,TOTALTAX1,TOTALTAX2,
                                     TOTALTAX3,INCLUSIVE1,INCLUSIVE2,INCLUSIVE3,INTERNAL,TOTALTAX4,TOTALTAX5,
                                     INCLUSIVE4,INCLUSIVE5,STARTDATE,ENDDATE,PAYONRECEIPT,WFID,WFACTIVE )
-        Values (
+        values (
                                     $Ponum,$PODesc ,Upper($username) ,sysdate,sysdate,
                                     NULL,'STD',NULL,{postatus},sysdate,&Vendor,&contact,
                                     $freightterms,$paymentterms,NULL,NULL,NULL,$shipto,NULL,
@@ -527,7 +527,7 @@ Begin-Procedure Build_POLine
     let $errplace = 'Error in inserting into poline'
 
     Begin-Sql on-error=sql_error
-        Insert into POLINE (    PONUM, ITEMNUM, STORELOC,
+        insert into POLINE (    PONUM, ITEMNUM, STORELOC,
                                 ORDERQTY,ORDERUNIT,UNITCOST,CONVERSION,RECEIVEDQTY,RECEIVEDUNITCOST,
                                 RECEIVEDTOTALCOST,REJECTEDQTY,VENDELIVERYDATE,SUPERVISOR,ENTERDATE,
                                 ENTERBY,DESCRIPTION,PL1,PL2,PL3,PL4,
@@ -545,7 +545,7 @@ Begin-Procedure Build_POLine
                                 POLALN4,POLALN5,PCARDNUM,PCARDTYPE,PCARDEXPDATE,
                                 FINCNTRLID,PCARDVERIFICATION,MKTPLCITEM,VENDORPACKCODE,VENDORPACKQUANTITY,
                                 VENDORWAREHOUSE)
-        Values (                $Ponum, &ITEMNUM, $STOREROOM,
+        values (                $Ponum, &ITEMNUM, $STOREROOM,
                                 1','EA',#total,'1',0,0.00,
                                 0.00,0,NULL,NULL,sysdate,
                                 $username , $LineDesc ,NULL,NULL,NULL,NULL,
