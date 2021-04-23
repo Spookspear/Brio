@@ -31,7 +31,7 @@
 !   30/11/10      G Stephen     Project Wales - VAT Changes to 'AZ'
 !   14/12/10      G Stephen     Project Wales - Add new purchase groups
 !   30/09/2015    MDM           Updated folder path from bp1grais003 to in1grafap002 as per issues with old alias no longer following file share Move
-!   18/04/2021    G Bishop      Beautified code for documentation - note: these will not compile
+!   18/04/2021    G Bishop      Beautified code for documentation - note: this will not compile
 !--------------------------------------------------------------------------------
 ! Compile with these switches -rs -msqrmax.sqm
 !--------------------------------------------------------------------------------
@@ -236,7 +236,7 @@ Begin-Procedure Master_Query
         and         MATUSETRANS.STORELOC = INVENTORY.LOCATION
         and         ITEM.OUTSIDE = 'Y'
         and         TRANSDATE >= TO_DATE($STARTDATE,'YYYY-MON-DD HH24:MI:SS')
-        and         TRANSDATE <= TO_DATE($EndDATE,'YYYY-MON-DD HH24:MI:SS')
+        and         TRANSDATE <= TO_DATE($ENDDATE,'YYYY-MON-DD HH24:MI:SS')
         Order By    MATUSETRANS.STORELOC,
                     MATUSETRANS.ITEMNUM
     End-Select
@@ -544,8 +544,8 @@ Begin-Procedure Build_POLine
                                 PLIN7,PLIN8,PLIN9,POLALN1,POLALN2,POLALN3,
                                 POLALN4,POLALN5,PCARDNUM,PCARDTYPE,PCARDEXPDATE,
                                 FINCNTRLID,PCARDVERIFICATION,MKTPLCITEM,VENDORPACKCODE,VENDORPACKQUANTITY,
-                                VENDORWAREHOUSE)
-        values (                $Ponum, &ITEMNUM, $STOREROOM,
+                                VENDORWAREHOUSE
+    )   values (                $Ponum, &ITEMNUM, $STOREROOM,
                                 1','EA',#total,'1',0,0.00,
                                 0.00,0,NULL,NULL,sysdate,
                                 $username , $LineDesc ,NULL,NULL,NULL,NULL,
@@ -587,7 +587,7 @@ Begin-Procedure Receipt_PO
     let #curbal =0
 
     Begin-Select
-            Nvl(Sum(curbal),0)          &curbal / #curbal
+            Nvl(Sum(CURBAL),0)          &curbal / #curbal
         from    INVBALANCES
         where   ITEMNUM = &itemnum
         and     LOCATION = $storeroom
@@ -613,13 +613,10 @@ Begin-Procedure Receipt_PO
                                     QTYREQUESTED,CURBAL,EXCHANGERATE2,LINECOST2,MRNUM,MRLINENUM,
                                     MATRECTRANSID,OWNERSYSID,EXTERNALREFID,IT6,IT7,IT8,
                                     IT9,IT10,ITIN4,ITIN5,ITIN6,ITIN7,APISEQ,INTERID,MIGCHANGEID,
-                                    SENDERSYSID,EXPDONE,FINCNTRLID)
-        values (                    &ITEMNUM,$storeroom,
-                                    sysdate,sysdate,1,'EA','RECEIPT',
-                                    #total,0,$ponum,null,null,
-                                    0,1,null,
-                                    null,Upper($username),null,null,null,null,null,
-                                    null,'N',null,null,null,
+                                    SENDERSYSID,EXPDONE,FINCNTRLID
+    )   values (                    &ITEMNUM, $storeroom, sysdate, sysdate, 1, 'EA', 'RECEIPT',
+                                    #total, 0, $ponum, null, null, 0, 1, null, null, Upper($username), null, null, null, null, null,
+                                    null,'N', null, null, null, 
                                     1,null,Upper($username),#CURBAL,NULL,
                                     null,null,null,
                                     null,&GLDEBITACCOUNT,null,#total,&v_FINANCIALPERIOD,
